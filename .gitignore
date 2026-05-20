@@ -26,11 +26,9 @@ backend/.data/
 *.db
 *.sqlite
 
-# V6 scripts copied for Docker build (di-generate ulang saat deploy)
-backend/v6_scripts/
-backend/v6_skills/
-backend/v6_templates/
-backend/v6_checklists/
+# Test fixtures (regenerate via dummy-test-docs/_generator.py)
+dummy-test-docs/*.pdf
+dummy-test-docs/*.xlsx
 
 # OS
 .DS_Store
@@ -42,3 +40,9 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Backup sed
+.env.bak*
+
+# Backup sed
+.env.bak*

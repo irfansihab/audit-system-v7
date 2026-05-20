@@ -63,9 +63,9 @@ async def run_batch_pbj(args: dict) -> dict:
     extra: list[str] = []
     role = args.get("role", "AT").upper()
     if role == "AT":
-        extra = ["--role", "AT", "--no-render"]
+        extra = ["--role", "AT"]
     else:
-        extra = ["--role", "KT", "--context", args.get("context_path", "")]
+        extra = ["--role", "KT"]
     code, out, err = await run_v6_script(
         "scripts/reviu-pengadaan/run_batch.py",
         ["--penugasan", args["penugasan_folder"], *extra],

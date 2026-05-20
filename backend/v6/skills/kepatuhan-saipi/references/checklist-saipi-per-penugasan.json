@@ -1,0 +1,279 @@
+{
+  "schema_version": "v4.0.0",
+  "sumber": "PER-01/AAIPI/DPN/2021 — Standar Audit Intern Pemerintah Indonesia",
+  "stages": ["kkp", "lhp"],
+  "rules": [
+    {
+      "rule_id": "IND-001",
+      "saipi_standar": "1100/1130",
+      "kelompok": "Independensi & Objektivitas",
+      "deskripsi": "Deklarasi independensi tim ada di _QA-SAIPI/deklarasi-independensi.md",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "NEEDS_REVIEW",
+      "auto_check": true,
+      "fail_if_missing": "NEEDS_REVIEW"
+    },
+    {
+      "rule_id": "IND-002",
+      "saipi_standar": "1130.A1",
+      "kelompok": "Independensi & Objektivitas",
+      "deskripsi": "Tim tidak pernah jadi PIC area diaudit dalam 1 tahun terakhir",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "NEEDS_REVIEW",
+      "auto_check": false
+    },
+    {
+      "rule_id": "KEC-001",
+      "saipi_standar": "1210",
+      "kelompok": "Kecakapan",
+      "deskripsi": "Tiap anggota tim mencantumkan jabfung auditor di context.md",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "PERINGATAN",
+      "auto_check": true
+    },
+    {
+      "rule_id": "KEC-002",
+      "saipi_standar": "1210.A1",
+      "kelompok": "Kecakapan",
+      "deskripsi": "Jika butuh keahlian khusus, tim memiliki / didampingi pihak cakap",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "NEEDS_REVIEW",
+      "auto_check": false
+    },
+    {
+      "rule_id": "REN-001",
+      "saipi_standar": "2200/2240",
+      "kelompok": "Perencanaan",
+      "deskripsi": "Kartu Penugasan tersedia di 00-input/",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true
+    },
+    {
+      "rule_id": "REN-002",
+      "saipi_standar": "2200/2240",
+      "kelompok": "Perencanaan",
+      "deskripsi": "Program Kerja Pengawasan tersedia di 00-input/",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true
+    },
+    {
+      "rule_id": "REN-003",
+      "saipi_standar": "2210",
+      "kelompok": "Perencanaan",
+      "deskripsi": "context.md memuat field 'Tujuan' terisi non-empty",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true
+    },
+    {
+      "rule_id": "REN-004",
+      "saipi_standar": "2210",
+      "kelompok": "Perencanaan",
+      "deskripsi": "_PKP/sasaran-assignment.json minimal 1 sasaran",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true
+    },
+    {
+      "rule_id": "REN-005",
+      "saipi_standar": "2220",
+      "kelompok": "Perencanaan",
+      "deskripsi": "context.md memuat field 'Ruang Lingkup' terisi",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "PERINGATAN",
+      "auto_check": true
+    },
+    {
+      "rule_id": "REN-006",
+      "saipi_standar": "2230",
+      "kelompok": "Perencanaan",
+      "deskripsi": "Setiap sasaran memiliki minimal 1 anggota tim assigned",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true
+    },
+    {
+      "rule_id": "REN-007",
+      "saipi_standar": "2210.A3",
+      "kelompok": "Perencanaan",
+      "deskripsi": "Setiap sasaran memiliki langkah_kerja non-empty",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "PERINGATAN",
+      "auto_check": true
+    },
+    {
+      "rule_id": "LAK-001",
+      "saipi_standar": "2310",
+      "kelompok": "Pelaksanaan",
+      "deskripsi": "Setiap temuan punya dokumen_sumber minimal 1",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true
+    },
+    {
+      "rule_id": "LAK-002",
+      "saipi_standar": "2310",
+      "kelompok": "Pelaksanaan",
+      "deskripsi": "File yang direferensi di dokumen_sumber.file ada di 00-input/",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true
+    },
+    {
+      "rule_id": "LAK-003",
+      "saipi_standar": "2310",
+      "kelompok": "Pelaksanaan",
+      "deskripsi": "Setiap dokumen_sumber memiliki halaman terisi (kecukupan informasi)",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "PERINGATAN",
+      "auto_check": true
+    },
+    {
+      "rule_id": "LAK-004",
+      "saipi_standar": "2320",
+      "kelompok": "Pelaksanaan",
+      "deskripsi": "Setiap temuan punya kondisi/kriteria/akibat panjang minimal",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true
+    },
+    {
+      "rule_id": "LAK-005",
+      "saipi_standar": "2320",
+      "kelompok": "Pelaksanaan",
+      "deskripsi": "Untuk audit (audit-pengadaan/audit-kinerja), setiap temuan punya field 'sebab' non-null",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true,
+      "kondisional": "jenis_pengawasan in ['audit-pengadaan','audit-kinerja']"
+    },
+    {
+      "rule_id": "LAK-006",
+      "saipi_standar": "2330",
+      "kelompok": "Pelaksanaan",
+      "deskripsi": "_KKP/temuan.json valid terhadap kkp-temuan.schema.json",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true
+    },
+    {
+      "rule_id": "LAK-007",
+      "saipi_standar": "2330",
+      "kelompok": "Pelaksanaan",
+      "deskripsi": "Minimal 1 file _KKP/KKP-*.docx ada (dokumentasi formal)",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "PERINGATAN",
+      "auto_check": true
+    },
+    {
+      "rule_id": "LAK-008",
+      "saipi_standar": "2340",
+      "kelompok": "Pelaksanaan",
+      "deskripsi": "Ada audit-trail event GATE_PASSED task=03 dengan actor.role_kode in {KT,PT,PM} (bukti supervisi KKP oleh ketua tim)",
+      "stages": ["lhp"],
+      "default_severity": "PERINGATAN",
+      "auto_check": true
+    },
+    {
+      "rule_id": "LAK-009",
+      "saipi_standar": "2310.A1",
+      "kelompok": "Pelaksanaan",
+      "deskripsi": "Setiap sasaran SELESAI_KKP memiliki id_temuan_terkait non-empty (atau dieksplisitkan tidak ada temuan)",
+      "stages": ["kkp", "lhp"],
+      "default_severity": "PERINGATAN",
+      "auto_check": true
+    },
+    {
+      "rule_id": "KOM-001",
+      "saipi_standar": "2410",
+      "kelompok": "Komunikasi",
+      "deskripsi": "LHP memuat heading/string 'Tujuan' atau 'Sasaran'",
+      "stages": ["lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true
+    },
+    {
+      "rule_id": "KOM-002",
+      "saipi_standar": "2410",
+      "kelompok": "Komunikasi",
+      "deskripsi": "LHP memuat heading/string 'Ruang Lingkup'",
+      "stages": ["lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true
+    },
+    {
+      "rule_id": "KOM-003",
+      "saipi_standar": "2410.A1",
+      "kelompok": "Komunikasi",
+      "deskripsi": "LHP memuat heading/string 'Simpulan' (atau 'Kesimpulan')",
+      "stages": ["lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true
+    },
+    {
+      "rule_id": "KOM-004",
+      "saipi_standar": "2410.A1",
+      "kelompok": "Komunikasi",
+      "deskripsi": "LHP memuat heading/string 'Rekomendasi' (atau 'Saran')",
+      "stages": ["lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true
+    },
+    {
+      "rule_id": "KOM-005",
+      "saipi_standar": "2420",
+      "kelompok": "Komunikasi",
+      "deskripsi": "LHP tidak memuat placeholder bocor ({{...}}, [XXXX], [TBD], [CONTOH]) — whitelist [DIISI AUDITOR]",
+      "stages": ["lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true
+    },
+    {
+      "rule_id": "KOM-006",
+      "saipi_standar": "2420",
+      "kelompok": "Komunikasi",
+      "deskripsi": "Panjang LHP wajar (1500–15000 kata)",
+      "stages": ["lhp"],
+      "default_severity": "PERINGATAN",
+      "auto_check": true
+    },
+    {
+      "rule_id": "KOM-007",
+      "saipi_standar": "2422",
+      "kelompok": "Komunikasi",
+      "deskripsi": "LHP memuat section 'Tanggapan Auditi' / 'Tanggapan Manajemen' / 'Tanggapan Klien'",
+      "stages": ["lhp"],
+      "default_severity": "PERINGATAN",
+      "auto_check": true
+    },
+    {
+      "rule_id": "KOM-008",
+      "saipi_standar": "2430",
+      "kelompok": "Komunikasi",
+      "deskripsi": "LHP memuat pernyataan 'dilaksanakan sesuai dengan Standar Audit Intern Pemerintah Indonesia'",
+      "stages": ["lhp"],
+      "default_severity": "KRITIS",
+      "auto_check": true
+    },
+    {
+      "rule_id": "KOM-009",
+      "saipi_standar": "2421",
+      "kelompok": "Komunikasi",
+      "deskripsi": "Jika ada koreksi pasca-distribusi LHP, sudah dikomunikasikan ulang",
+      "stages": ["lhp"],
+      "default_severity": "NEEDS_REVIEW",
+      "auto_check": false
+    },
+    {
+      "rule_id": "KOM-010",
+      "saipi_standar": "2431",
+      "kelompok": "Komunikasi",
+      "deskripsi": "Jika ada gap SAIPI yang tidak dapat dipenuhi, telah diungkap di LHP",
+      "stages": ["lhp"],
+      "default_severity": "NEEDS_REVIEW",
+      "auto_check": false
+    }
+  ]
+}

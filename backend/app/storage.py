@@ -25,6 +25,7 @@ PENUGASAN_SUBFOLDERS = [
     "_INGESTED",
     "_AUDIT-TRAIL",
     "_BUKTI-AI",
+    "_FEEDBACK-AGEN",
     "_SUBMIT",
 ]
 

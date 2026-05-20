@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     app_secret_key: str = "dev-secret-please-change"
     app_data_dir: str = "/data"
     app_v6_path: str = "/v6"
+    app_wiki_path: str = "/wiki"  # knowledge base auditor (pattern temuan, dll)
     app_cors_origins: str = "http://localhost:3000"
 
     # Token quota per user per jam (safety)
@@ -47,6 +48,10 @@ class Settings(BaseSettings):
     @property
     def v6_path(self) -> Path:
         return Path(self.app_v6_path)
+
+    @property
+    def wiki_path(self) -> Path:
+        return Path(self.app_wiki_path)
 
     @property
     def is_dev(self) -> bool:

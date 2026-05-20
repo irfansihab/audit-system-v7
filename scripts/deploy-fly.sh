@@ -11,34 +11,34 @@ fi
 
 cd "$(dirname "$0")/../backend"
 
-echo "📦 Menyiapkan V6 scripts untuk dimasukkan ke image..."
-# Copy script V6 yang dibutuhkan
-mkdir -p v6_scripts v6_skills v6_templates v6_checklists
+echo "🔍 Memverifikasi V6 sudah ter-embed di backend/v6/..."
 
-cp -r ../../audit-system-v4/scripts/reviu-rka-kl v6_scripts/
-cp -r ../../audit-system-v4/scripts/reviu-pengadaan v6_scripts/
-cp -r ../../audit-system-v4/scripts/audit-pengadaan v6_scripts/
-cp ../../audit-system-v4/scripts/qc_saipi.py v6_scripts/ 2>/dev/null || true
-cp ../../audit-system-v4/scripts/render_kkp.py v6_scripts/ 2>/dev/null || true
-cp ../../audit-system-v4/scripts/render_lhp.py v6_scripts/ 2>/dev/null || true
-cp ../../audit-system-v4/scripts/validate_kkp_json.py v6_scripts/ 2>/dev/null || true
-cp ../../audit-system-v4/scripts/role_check.py v6_scripts/ 2>/dev/null || true
-cp ../../audit-system-v4/scripts/sasaran_completeness.py v6_scripts/ 2>/dev/null || true
-cp ../../audit-system-v4/scripts/audit_trail.py v6_scripts/ 2>/dev/null || true
+# V6 sudah ter-embed di backend/v6/ (tidak lagi di sibling folder audit-system-v4).
+# Dockerfile akan COPY v6/ /v6/ langsung saat build.
+MISSING=()
+for sub in scripts skills templates checklists; do
+    if [ ! -d "v6/$sub" ]; then
+        MISSING+=("v6/$sub")
+    fi
+done
 
-cp -r ../../audit-system-v4/skills/reviu-rka-kl v6_skills/
-cp -r ../../audit-system-v4/skills/reviu-pengadaan v6_skills/
-cp -r ../../audit-system-v4/skills/kepatuhan-saipi v6_skills/
-cp -r ../../audit-system-v4/skills/panduan-format-umum v6_skills/
-cp -r ../../audit-system-v4/skills/shared-pbj-references v6_skills/
+if [ "${#MISSING[@]}" -gt 0 ]; then
+    echo "❌ Folder berikut tidak ditemukan di backend/:"
+    printf '   - %s\n' "${MISSING[@]}"
+    echo ""
+    echo "V6 harus ter-embed di backend/v6/{scripts,skills,templates,checklists}."
+    echo "Lihat panduan setup di README atau memory setup_dev_audit_v7."
+    exit 1
+fi
 
-cp ../../audit-system-v4/templates/*.docx v6_templates/ 2>/dev/null || true
+# Sanity: pastikan binary entrypoint V6 ada
+for script in v6/scripts/reviu-rka-kl/run_batch.py v6/scripts/reviu-pengadaan/run_batch.py; do
+    if [ ! -f "$script" ]; then
+        echo "⚠️  Peringatan: $script tidak ditemukan. Skill terkait mungkin tidak jalan."
+    fi
+done
 
-mkdir -p v6_checklists
-cp ../../audit-system-v4/checklists/reviu-rka-kl.md v6_checklists/ 2>/dev/null || true
-cp ../../audit-system-v4/checklists/reviu-pengadaan.md v6_checklists/ 2>/dev/null || true
-
-echo "✅ V6 scripts siap di backend/v6_scripts/"
+echo "✅ V6 ter-embed: $(ls v6/scripts/ | wc -l | tr -d ' ') item di scripts/, $(ls v6/skills/ | wc -l | tr -d ' ') item di skills/."
 
 # Cek apakah app sudah ada di Fly
 if fly status --app audit-ai-v7 &> /dev/null; then

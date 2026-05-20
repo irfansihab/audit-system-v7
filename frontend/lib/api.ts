@@ -166,4 +166,44 @@ runAgent: (
       method: 'POST',
       body: JSON.stringify({ penugasan_id: penugasanId, prompt }),
     }),
+
+  // ===== File output access =====
+
+  listFiles: (penugasanId: number) =>
+    request<{
+      penugasan_id: number;
+      folder_path: string;
+      categories: Array<{
+        key: string;
+        label: string;
+        files: Array<{
+          name: string;
+          path: string;
+          size_bytes: number;
+          mtime: string;
+          ext: string;
+        }>;
+      }>;
+    }>(`/penugasan/${penugasanId}/files`),
+
+  /** Download file sebagai Blob — pakai untuk Save As / open. */
+  downloadFile: async (penugasanId: number, path: string): Promise<Blob> => {
+    const token = getToken() || '';
+    const url = `${API_BASE}/penugasan/${penugasanId}/files/download?path=${encodeURIComponent(path)}`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error(`${res.status}: ${await res.text()}`);
+    return res.blob();
+  },
+
+  /** Preview text-based file (.md, .json, .txt). Return content string. */
+  previewFile: (penugasanId: number, path: string, maxBytes = 50_000) =>
+    request<{
+      path: string;
+      size_bytes: number;
+      ext: string;
+      truncated: boolean;
+      content: string;
+    }>(`/penugasan/${penugasanId}/files/preview?path=${encodeURIComponent(path)}&max_bytes=${maxBytes}`),
 };

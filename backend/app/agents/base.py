@@ -6,6 +6,11 @@ Setiap agen punya:
 - daftar tools (in-process MCP server)
 - allowlist tool yang sesuai peran
 - model (haiku / sonnet)
+
+DESIGN INVARIANT — agen TIDAK BOLEH memakai built-in tools (Bash/Edit/Write/
+TodoWrite/Agent/Glob/Read). Hanya MCP tools yang kita ekspos lewat bridge.
+Alasan: agen dalam konteks audit harus bekerja melalui pipeline V6 deterministic
+dan bridge yang kita kontrol — bukan improvisasi shell/Edit ke file sistem.
 """
 from pathlib import Path
 
@@ -41,13 +46,21 @@ def build_agent_options(
     allowed = (
         [f"mcp__{server_name}__{n}" for n in allowed_tool_names]
         if allowed_tool_names
-        else [f"mcp__{server_name}__{t.__name__}" for t in tools]
+        else [f"mcp__{server_name}__{t.name}" for t in tools]
     )
 
     return ClaudeAgentOptions(
         system_prompt=load_prompt(prompt_name),
+        # tools=[] mematikan SEMUA built-in (Bash, Edit, Write, Read, Glob,
+        # TodoWrite, Agent, Skill, dll). Agen hanya bisa pakai MCP tools di
+        # bawah supaya tidak menyentuh V6 atau filesystem lain di luar bridge.
+        tools=[],
         mcp_servers={server_name: server},
         allowed_tools=allowed,
+        # Defensive: walaupun tools=[] sudah mati, kita explicit-deny
+        # tool-tool yang biasa dipakai agen untuk improvisasi.
+        disallowed_tools=["Bash", "Edit", "Write", "Read", "TodoWrite", "Glob", "Grep", "Agent", "Skill"],
         model=model,
+        # acceptEdits hanya berlaku untuk MCP tools sekarang (built-in mati).
         permission_mode="acceptEdits",
     )

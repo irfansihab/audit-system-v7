@@ -1,4 +1,41 @@
-"""Tools untuk Agen Anggota Tim: append temuan ke temuan.json, render KKP.docx."""
+"""Tools untuk Agen Anggota Tim: append temuan ke temuan.json, render KKP.docx.
+
+Schema temuan.json yang dipakai mengikuti yang dibutuhkan V6 render_kkp.py:
+
+    {
+        "penugasan": {
+            "kode": str,
+            "obyek": str,
+            "jenis_pengawasan": str,  # skill: reviu-pengadaan, reviu-rka-kl
+            "nomor_st": str,
+            "tanggal_st": str,
+        },
+        "schema_version": "v4.0.0",
+        "temuan": [
+            {
+                "id_temuan": "T-001",
+                "sasaran_id": "S-01",
+                "anggota_tim": {"nama_lengkap": "Sarah Aulia"},
+                "judul_temuan": "...",
+                "kondisi": "...",
+                "kriteria": "...",
+                "sebab": "..." | null,        # null untuk reviu (bukan audit)
+                "akibat": "...",
+                "dokumen_sumber": [
+                    {"file": "02-kontrak/KAK.pdf", "halaman": 3, "kutipan": "..."}
+                ],
+                "status": "DRAFT",
+                "tanggal_input": "ISO datetime",
+                "catatan_ketua_tim": null,
+                "integral": null,
+            },
+            ...
+        ]
+    }
+
+Bridge `append_temuan` menerima input yang lebih sederhana dari agen dan
+me-transform ke schema di atas — supaya agen tidak perlu tahu skema render_kkp.
+"""
 import json
 from datetime import datetime
 from pathlib import Path
@@ -10,19 +47,38 @@ from app.tools.v6_bridge import run_v6_script, safe_read_json
 
 @tool(
     "read_context",
-    "Baca context.md + sasaran-assignment.json penugasan.",
+    "Baca context.md + sasaran-assignment.json + daftar file di subfolder input penugasan. "
+    "Pakai ini PERTAMA sebelum apapun untuk dapat konteks.",
     {"penugasan_folder": str},
 )
 async def read_context(args: dict) -> dict:
     folder = Path(args["penugasan_folder"])
-    context_md = (folder / "context.md").read_text(encoding="utf-8") if (folder / "context.md").exists() else ""
+    context_md = (
+        (folder / "context.md").read_text(encoding="utf-8")
+        if (folder / "context.md").exists()
+        else ""
+    )
     assignment = safe_read_json(folder / "_PKP" / "sasaran-assignment.json")
+
+    # Daftar file di subfolder input (00-input, 01-..., 02-..., dst)
+    # supaya agen tahu file mana yang bisa direferensikan di dokumen_sumber.
+    input_files: list[str] = []
+    for p in folder.iterdir():
+        if p.is_dir() and not p.name.startswith("_"):
+            for f in p.rglob("*"):
+                if f.is_file():
+                    input_files.append(str(f.relative_to(folder)))
+
     return {
         "content": [
             {
                 "type": "text",
                 "text": json.dumps(
-                    {"context_md": context_md, "sasaran_assignment": assignment},
+                    {
+                        "context_md": context_md,
+                        "sasaran_assignment": assignment,
+                        "input_files": sorted(input_files),
+                    },
                     ensure_ascii=False,
                 ),
             }
@@ -41,9 +97,56 @@ async def list_ingested(args: dict) -> dict:
     return {"content": [{"type": "text", "text": "\n".join(files) or "(kosong)"}]}
 
 
+def _normalize_temuan_input(raw: dict) -> dict:
+    """Map keys umum yang dipakai agen ke schema V6 render_kkp.
+
+    Agen sering pakai `judul` / `assigned_to`; render_kkp expect
+    `judul_temuan` / `anggota_tim.nama_lengkap`. Bridge translate di sini
+    supaya agen tidak perlu hafal skema persis.
+    """
+    out = dict(raw)
+
+    # judul → judul_temuan
+    if "judul_temuan" not in out and "judul" in out:
+        out["judul_temuan"] = out.pop("judul")
+
+    # assigned_to (str atau list[str]) → anggota_tim: {"nama_lengkap": str}
+    if "anggota_tim" not in out:
+        assigned = out.pop("assigned_to", None) or out.pop("anggota", None)
+        if isinstance(assigned, list) and assigned:
+            assigned = assigned[0]
+        if isinstance(assigned, dict):
+            out["anggota_tim"] = assigned
+        elif isinstance(assigned, str):
+            out["anggota_tim"] = {"nama_lengkap": assigned}
+        else:
+            out["anggota_tim"] = {"nama_lengkap": ""}
+    elif isinstance(out.get("anggota_tim"), str):
+        out["anggota_tim"] = {"nama_lengkap": out["anggota_tim"]}
+
+    # Default-fill field SAIPI yang wajib di render_kkp
+    out.setdefault("sasaran_id", "")
+    out.setdefault("kondisi", "")
+    out.setdefault("kriteria", "")
+    out.setdefault("akibat", "")
+    out.setdefault("sebab", None)  # reviu tidak punya sebab; bisa null
+    out.setdefault("dokumen_sumber", [])
+
+    # Metadata
+    out.setdefault("tanggal_input", datetime.utcnow().isoformat() + "Z")
+    out.setdefault("status", "DRAFT")
+    out.setdefault("catatan_ketua_tim", None)
+    out.setdefault("integral", None)
+
+    return out
+
+
 @tool(
     "append_temuan",
-    "Append 1 temuan ke _KKP/temuan.json. Struktur input mengikuti schema kkp-temuan.",
+    "Append 1 temuan ke _KKP/temuan.json. Bridge otomatis transform key sederhana "
+    "(judul, assigned_to) ke schema V6 (judul_temuan, anggota_tim.nama_lengkap). "
+    "Field wajib di input: sasaran_id, anggota_tim/assigned_to, judul, kondisi, kriteria, "
+    "akibat, dokumen_sumber[{file, halaman, kutipan}].",
     {
         "penugasan_folder": str,
         "temuan": dict,
@@ -54,18 +157,27 @@ async def append_temuan(args: dict) -> dict:
     path = folder / "_KKP" / "temuan.json"
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    data: dict
+    # Init kalau belum ada (umumnya sudah ada karena scaffolding di POST /penugasan,
+    # tapi defensive).
     if path.exists():
-        data = safe_read_json(path) or {"penugasan_id": folder.name, "temuan": []}
+        data = safe_read_json(path) or {}
     else:
-        data = {"penugasan_id": folder.name, "skill": "", "version": "1.0", "temuan": []}
+        data = {}
+    if not data or "penugasan" not in data:
+        data = {
+            "penugasan": {
+                "kode": folder.name,
+                "obyek": "",
+                "jenis_pengawasan": "",
+                "nomor_st": "",
+                "tanggal_st": None,
+            },
+            "schema_version": "v4.0.0",
+            "temuan": [],
+        }
+    data.setdefault("temuan", [])
 
-    new_temuan = dict(args["temuan"])
-    new_temuan.setdefault("tanggal_input", datetime.utcnow().isoformat() + "Z")
-    new_temuan.setdefault("status", "DRAFT")
-    new_temuan.setdefault("catatan_ketua_tim", None)
-    new_temuan.setdefault("integral", None)
-
+    new_temuan = _normalize_temuan_input(args["temuan"])
     if not new_temuan.get("id_temuan"):
         seq = len(data["temuan"]) + 1
         new_temuan["id_temuan"] = f"T-{seq:03d}"
@@ -74,7 +186,10 @@ async def append_temuan(args: dict) -> dict:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     return {
         "content": [
-            {"type": "text", "text": f"OK|id={new_temuan['id_temuan']}|total_now={len(data['temuan'])}"}
+            {
+                "type": "text",
+                "text": f"OK|id={new_temuan['id_temuan']}|total_now={len(data['temuan'])}",
+            }
         ]
     }
 
@@ -104,17 +219,59 @@ async def render_kkp_docx(args: dict) -> dict:
 
 
 @tool(
-    "request_qc_kkp",
-    "Trigger Agen QC SAIPI stage KKP. Web orchestrator akan memanggil agen QC terpisah.",
+    "run_qc_kkp",
+    "Jalankan QC SAIPI stage KKP secara SYNCHRONOUS. Memanggil scripts/qc_saipi.py "
+    "V6 dengan --stage kkp lalu return status + breakdown severity + excerpt laporan. "
+    "Pakai SETELAH semua temuan + KKP.docx selesai untuk gate kepatuhan SAIPI.",
     {"penugasan_folder": str},
 )
-async def request_qc_kkp(args: dict) -> dict:
-    # Tool ini hanya menulis "marker" — orchestrator agent SDK di routes/agen.py
-    # akan mendeteksinya dan men-spawn agen QC SAIPI.
-    marker = Path(args["penugasan_folder"]) / "_QA-SAIPI" / "_pending-kkp.flag"
-    marker.parent.mkdir(parents=True, exist_ok=True)
-    marker.write_text(datetime.utcnow().isoformat(), encoding="utf-8")
-    return {"content": [{"type": "text", "text": "QC_KKP_REQUESTED"}]}
+async def run_qc_kkp(args: dict) -> dict:
+    """Sync version dari QC KKP — ganti pola async marker-flag yang lama.
+
+    Pola lama (`request_qc_kkp` writer flag) bermasalah: agen yang memanggilnya
+    tidak dapat hasil → improvisasi sendiri. Sync version langsung jalankan
+    qc_saipi.py V6 dan return ringkasan untuk dipakai agen langsung.
+    """
+    folder = Path(args["penugasan_folder"])
+    code, out, err = await run_v6_script(
+        "scripts/qc_saipi.py",
+        ["--penugasan", str(folder), "--stage", "kkp"],
+        timeout=120,
+    )
+
+    checklist = safe_read_json(folder / "_QA-SAIPI" / "checklist-kkp.json")
+    items = checklist.get("items", []) if isinstance(checklist, dict) else []
+    total_kritis = sum(1 for i in items if i.get("severity") == "KRITIS" and i.get("status") == "GAP")
+    total_peringatan = sum(1 for i in items if i.get("severity") == "PERINGATAN" and i.get("status") == "GAP")
+    total_needs_review = sum(1 for i in items if i.get("severity") == "NEEDS_REVIEW")
+    total_ok = sum(1 for i in items if i.get("status") == "OK")
+
+    if total_kritis > 0:
+        status_label = "BLOCKED_KRITIS"
+    elif total_peringatan > 0 or total_needs_review > 0:
+        status_label = "PASS_WITH_WARNINGS"
+    else:
+        status_label = "PASS"
+
+    laporan_path = folder / "_QA-SAIPI" / "laporan-qa-kkp.md"
+    laporan_excerpt = ""
+    if laporan_path.exists():
+        laporan_excerpt = laporan_path.read_text(encoding="utf-8")[:4000]
+
+    return {
+        "content": [
+            {
+                "type": "text",
+                "text": (
+                    f"stage=kkp|status={status_label}|exit_code={code}|"
+                    f"kritis={total_kritis}|peringatan={total_peringatan}|"
+                    f"needs_review={total_needs_review}|ok={total_ok}|"
+                    f"laporan_path={laporan_path}\n\n"
+                    f"=== LAPORAN QA (excerpt) ===\n{laporan_excerpt}"
+                ),
+            }
+        ]
+    }
 
 
-KKP_TOOLS = [read_context, list_ingested, append_temuan, render_kkp_docx, request_qc_kkp]
+KKP_TOOLS = [read_context, list_ingested, append_temuan, render_kkp_docx, run_qc_kkp]

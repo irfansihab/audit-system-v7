@@ -1,0 +1,485 @@
+# Desain Proyek Audit AI v7 — Roadmap 1 Bulan
+
+**Periode:** 20 Mei – 19 Juni 2026  
+**Owner:** Inspektorat II Komdigi  
+**Status dokumen:** Living document — di-update tiap akhir minggu  
+**Lihat juga:** [README.md](README.md) (setup), [DEPLOY.md](DEPLOY.md) (deploy)
+
+---
+
+## 1. Ringkasan Eksekutif
+
+Audit AI v7 saat ini sudah memiliki pipeline end-to-end yang berfungsi di dev lokal untuk **Reviu Pengadaan** dengan 4 agen Claude (Ingestion, Anggota Tim, QC SAIPI, Ketua Tim). Roadmap 4 minggu ini menyelesaikan **3 hal besar**:
+
+1. **Closure pipeline** — Ketua Tim flow end-to-end + production deploy yang benar
+2. **Wiki populate** — knowledge base 25+ pattern temuan agar agen konsisten dengan gaya tim
+3. **CACM integration** — sistem audit AI menerima sinyal dari Continuous Auditing & Continuous Monitoring Komdigi untuk proaktif jadwalkan reviu
+
+Hasil akhir: sistem siap dipakai produksi untuk 2 skill (Reviu RKA-K/L + Reviu Pengadaan) dengan loop perbaikan iteratif lewat feedback agen + auditor.
+
+---
+
+## 2. Kondisi Saat Ini (20 Mei 2026)
+
+### Apa yang sudah jalan
+
+| Area | Status | Catatan |
+|------|--------|---------|
+| Dev environment lokal | ✅ Stable | Setup gotcha didokumentasikan di README |
+| 4 agen Claude hardened | ✅ Stable | tools=[], strict prompt, MCP-only access |
+| Pipeline V6 reviu-pengadaan | ✅ Jalan E2E | 39 tool calls per run, QC PASS |
+| Pipeline V6 reviu-rka-kl | ⚠️ Belum di-test E2E | Tools tersedia tapi belum diverifikasi dengan dokumen nyata |
+| File output access (UI) | ✅ Stable | Tab Output & QC dengan download + preview |
+| Auto-ingestion on upload | ✅ Stable | BackgroundTask di POST `/dokumen` |
+| Wiki pattern library | ✅ Infrastruktur siap | Hanya 2 pattern contoh (RP-08, RKA-01) |
+| Feedback loop Phase 1 | ✅ Stable | File JSON per run, visible di Output tab |
+| Backend deploy Fly.io | ⚠️ Deployed tapi AI belum jalan | Dockerfile baru perlu push |
+| Frontend deploy Vercel | ✅ Stable | URL: audit-ai-v7.vercel.app |
+
+### Yang masih kosong / blocker
+
+1. **Alur Ketua Tim belum ada** — sasaran-assignment.json + context.md tujuan/tim masih harus diisi manual oleh auditor
+2. **Production AI tidak jalan** — image Fly.io belum di-rebuild dengan Dockerfile + dependency baru (Node.js + claude-code CLI + claude-agent-sdk 0.1.81 + pydantic 2.11.10)
+3. **CACM integration belum ada** — Komdigi sudah punya sistem CACM (Continuous Auditing & Continuous Monitoring), tapi v7 belum bisa konsumsi/push data ke sana
+4. **Wiki kosong** — hanya 2 contoh pattern, butuh 25+ untuk realistis menutup skill yang ada
+
+---
+
+## 3. Tujuan 1 Bulan
+
+| Tujuan | Indikator Sukses |
+|--------|------------------|
+| **T1.** Pipeline reviu lengkap (AT + KT) jalan tanpa intervensi manual | Auditor cukup buat penugasan, upload dokumen, lalu klik "Jalankan Pipeline Otomatis" → output siap KKP + LHR + laporan QC |
+| **T2.** Wiki menjadi rujukan riil tim | 25+ pattern temuan terisi, 80% temuan agen mengacu ke pattern wiki |
+| **T3.** CACM sync 2 arah | (a) v7 baca alert CACM → proaktif buat penugasan; (b) hasil reviu v7 di-push balik ke CACM sebagai annotation |
+| **T4.** Production ready | 1 reviu real end-to-end di Fly.io + Vercel tanpa fallback ke lokal. Time-to-result < 10 menit per penugasan |
+| **T5.** Loop perbaikan jalan | Feedback agen di-review mingguan, minimal 3 pattern baru dari pattern_suggestions |
+
+---
+
+## 4. Roadmap Week-by-Week
+
+```mermaid
+gantt
+    title Roadmap Audit AI v7 — 4 Minggu
+    dateFormat YYYY-MM-DD
+    section Foundation
+    Ketua Tim flow E2E         :w1a, 2026-05-20, 5d
+    Production redeploy        :w1b, 2026-05-22, 2d
+    Wiki populate 10 pattern   :w1c, 2026-05-20, 7d
+    section Quality
+    Wiki populate 15+ pattern  :w2a, 2026-05-27, 7d
+    Multi-anggota workflow     :w2b, 2026-05-27, 4d
+    SSE streaming UI           :w2c, 2026-05-30, 3d
+    Feedback Phase 2 dashboard :w2d, 2026-06-01, 3d
+    section CACM
+    CACM connector design      :w3a, 2026-06-03, 2d
+    CACM read integration      :w3b, 2026-06-05, 4d
+    CACM push integration      :w3c, 2026-06-09, 3d
+    Auto-trigger reviu         :w3d, 2026-06-10, 3d
+    section Production
+    Performance optimization   :w4a, 2026-06-13, 3d
+    User docs + video          :w4b, 2026-06-15, 3d
+    UAT + handover             :w4c, 2026-06-17, 3d
+```
+
+### Minggu 1 (20–26 Mei): Foundation Completion
+
+**Tema:** Tutup gap Tier 1 yang tersisa. Siapkan production yang stabil.
+
+#### Deliverables
+
+| ID | Item | Owner | Estimasi |
+|----|------|-------|----------|
+| W1.1 | Agen Ketua Tim ekstrak sasaran dari ST/PKP + UI tab "Setup Penugasan" | Dev | 3 hari |
+| W1.2 | Multi-step KT flow: assign sasaran → konfirmasi auditor → write sasaran-assignment.json | Dev | 1 hari |
+| W1.3 | Redeploy backend ke Fly.io dengan Dockerfile + deps baru, verify AI jalan | DevOps | 1 hari |
+| W1.4 | Wiki populate: 5 pattern reviu-pengadaan + 5 pattern reviu-rka-kl | Auditor + Dev | 4 hari (paralel) |
+| W1.5 | Test E2E reviu-rka-kl dengan dokumen nyata (1 penugasan DIT. Pengendalian) | Auditor + Dev | 1 hari |
+
+#### Acceptance criteria
+
+- KT bisa login, pilih penugasan, klik "Setup Sasaran" → agen baca ST/PKP dari `_INGESTED/`, ekstrak draft sasaran → KT review → confirm → `sasaran-assignment.json` ter-tulis
+- Production URL `audit-ai-v7.fly.dev/health` return ok; `claude --version` di container working
+- 10 file pattern di-merge ke `wiki/temuan-patterns/{skill}/`, README per skill di-update
+- Reviu RKA-K/L 1 penugasan selesai E2E tanpa improvisasi agen
+
+---
+
+### Minggu 2 (27 Mei – 2 Juni): Quality & Scale
+
+**Tema:** Tingkatkan kualitas output + UX. Persiapkan untuk multi-user.
+
+#### Deliverables
+
+| ID | Item | Owner | Estimasi |
+|----|------|-------|----------|
+| W2.1 | Wiki populate: 8 pattern reviu-pengadaan + 7 pattern reviu-rka-kl (total ≥25) | Auditor | 5 hari |
+| W2.2 | Multi-anggota tim workflow: 1 penugasan punya 2+ anggota, masing-masing isi KKP terpisah | Dev | 3 hari |
+| W2.3 | SSE streaming UI: ganti `runAgent` sync dengan EventSource → text/tool_use real-time di chat | Dev | 3 hari |
+| W2.4 | Dashboard feedback aggregate: route `/feedback` yang scan semua `_FEEDBACK-AGEN/*.json` cross-penugasan, tampilkan top issues + pattern suggestions | Dev | 3 hari |
+| W2.5 | Hydration warning fix di frontend dashboard | Dev | 0.5 hari |
+| W2.6 | Persist agent run history per penugasan (sudah ter-store di DB, perlu UI "Riwayat") | Dev | 1 hari |
+
+#### Acceptance criteria
+
+- Wiki total 27+ pattern, masing-masing skill ≥12
+- Skenario "2 anggota tim, 4 sasaran" jalan: masing-masing AT isi 2 sasaran, KT combine + render LHR
+- Chat AT tampilkan tool calls + text token-by-token saat agen jalan (tidak nunggu sampai selesai)
+- `/feedback` dashboard tampilkan: total feedback 30 hari terakhir, top 5 workflow issues, top 5 pattern suggestions, severity heatmap
+
+---
+
+### Minggu 3 (3 – 9 Juni): CACM Integration
+
+**Tema:** Connect v7 ke sistem Continuous Auditing & Continuous Monitoring (CACM) yang sudah ada di Komdigi.
+
+#### Design CACM Integration
+
+```mermaid
+sequenceDiagram
+    participant CACM as CACM Komdigi
+    participant CONN as CACM Connector
+    participant V7 as Audit AI v7
+    participant Auditor as Auditor
+
+    Note over CACM,V7: Inbound — CACM mengirim sinyal ke v7
+    CACM->>CONN: Cron poll dashboard (Claude in Chrome)
+    CONN->>CONN: Parse: realisasi anggaran<60%, deviasi pengadaan, KPI under-target
+    CONN->>V7: POST /cacm/alert (signal payload)
+    V7->>V7: Buat draft penugasan otomatis (status: USULAN_CACM)
+    V7->>Auditor: Notify (email/UI badge): "1 penugasan baru dari sinyal CACM"
+    Auditor->>V7: Review draft, confirm/dismiss
+
+    Note over CACM,V7: Outbound — v7 mengirim hasil ke CACM
+    Auditor->>V7: Jalankan reviu (AT, KT, QC)
+    V7->>V7: Hasil: temuan.json + LHR + status QC
+    V7->>CONN: POST /cacm/sync (penugasan_id + temuan summary)
+    CONN->>CACM: Update dashboard CACM (annotation per Satker)
+    CACM->>Auditor: Tampilkan badge "Reviu terkait: 3 temuan kritis"
+```
+
+#### Deliverables
+
+| ID | Item | Owner | Estimasi |
+|----|------|-------|----------|
+| W3.1 | Design dokumen CACM integration (payload schema, auth, frekuensi sync, error handling) | Dev + Auditor | 2 hari |
+| W3.2 | CACM read connector — module Python yang query CACM via Claude in Chrome (pakai logic dari skill ews-cacm-komdigi) → return signal terstruktur | Dev | 3 hari |
+| W3.3 | Backend endpoint `POST /cacm/alert` — terima signal CACM, buat draft Penugasan dengan status `USULAN_CACM` | Dev | 1 hari |
+| W3.4 | Frontend: badge "Usulan dari CACM" di list penugasan + tab review/dismiss | Dev | 2 hari |
+| W3.5 | CACM push: endpoint `POST /cacm/sync` yang kirim hasil reviu balik ke CACM annotation | Dev | 2 hari |
+| W3.6 | Scheduled task: tiap pagi 06:00 poll CACM → check alert baru → auto-create penugasan | Dev | 1 hari |
+| W3.7 | Auditor training session: cara handle penugasan dari CACM vs penugasan manual | Auditor | 0.5 hari |
+
+#### Acceptance criteria
+
+- Skenario "CACM tampilkan realisasi anggaran Satker X < 60% di Q1" → v7 otomatis buat penugasan "Reviu Kinerja Realisasi Anggaran Satker X" → muncul di UI dengan badge
+- Auditor accept usulan → run pipeline → hasil reviu di-push balik ke CACM, terlihat di dashboard CACM sebagai annotation per Satker
+- Tidak ada signal CACM yang hilang dalam 7 hari berturut-turut
+
+#### Trade-off & Risiko CACM
+
+- **CACM tidak punya API resmi** → terpaksa scrape via Claude in Chrome. Fragile bila layout CACM berubah. Mitigasi: monitoring + alert kalau scrape error 2x berturut-turut
+- **Auth** → user perlu login manual di Chrome sebelum scheduled task. Mitigasi: dokumentasi tetap login, monitor cookie expiry
+- **Rate limit** → polling tiap pagi cukup, tidak realtime. CACM bukan high-frequency event source
+
+---
+
+### Minggu 4 (10 – 19 Juni): Production Hardening & Handover
+
+**Tema:** Performansi, dokumentasi, transfer pengetahuan ke tim.
+
+#### Deliverables
+
+| ID | Item | Owner | Estimasi |
+|----|------|-------|----------|
+| W4.1 | Performance optimization: caching `list_temuan_patterns` per request, parallel `read_pdf_page` per anomali, debounce ingestion task | Dev | 3 hari |
+| W4.2 | Backup/restore SOP: pg_dump scheduler Fly + restore script + test recovery | Dev/Ops | 1 hari |
+| W4.3 | Monitoring: setup budget alert Anthropic (USD 5/hari) + Fly (USD 10/bln) | Ops | 0.5 hari |
+| W4.4 | User documentation: panduan auditor (PDF + video screen-record 15 mnt) | Auditor + Dev | 3 hari |
+| W4.5 | Wiki best-practices: 1-hari workshop dengan tim reviu, finalize struktur folder + tagging | Auditor | 1 hari |
+| W4.6 | UAT — 3 penugasan real (1 reviu-pengadaan, 1 reviu-rka-kl, 1 dari CACM auto) | Auditor + Dev | 2 hari |
+| W4.7 | Handover meeting + final ROADMAP retrospective | Semua | 0.5 hari |
+
+#### Acceptance criteria
+
+- Time-to-result < 10 menit per penugasan (dari klik "Jalankan" sampai laporan ready)
+- Backup Postgres harian, restore time < 30 menit
+- Dokumentasi auditor + video tersedia di internal portal
+- 3 penugasan UAT lulus tanpa intervensi developer
+
+---
+
+## 5. Wiki Development Plan
+
+### Status saat ini
+
+- 2 pattern contoh: RP-08 (reviu-pengadaan), RKA-01 (reviu-rka-kl)
+- Infrastruktur: `list_temuan_patterns` + `get_temuan_pattern` MCP tool sudah jalan
+
+### Target akhir bulan: 25+ pattern
+
+#### Reviu Pengadaan (target 13 pattern)
+
+| ID | Judul (rencana) | Kategori | Severity | Status |
+|----|------|----------|----------|--------|
+| RP-01 | KAK Tidak Memuat SLA Terukur | PBJ-KAK | HIGH | ⏳ Week 1 |
+| RP-02 | KAK Mencantumkan Beberapa Metode Pemilihan | PBJ-METODE | MEDIUM | ⏳ Week 1 |
+| RP-03 | Spesifikasi Teknis KAK Mengarah ke Satu Brand | PBJ-KAK | HIGH | ⏳ Week 1 |
+| RP-04 | KAK Tidak Memuat Jadwal Pelaksanaan Terinci | PBJ-KAK | MEDIUM | ⏳ Week 2 |
+| RP-05 | HPS Tidak Mencantumkan Dasar Perpres 12/2021 | PBJ-HPS | MEDIUM | ⏳ Week 1 |
+| RP-06 | HPS Merujuk SBM TA Sebelumnya | PBJ-HPS | MEDIUM | ⏳ Week 1 |
+| RP-07 | HPS Inkonsisten dengan Spesifikasi KAK | PBJ-TRACEABILITY | HIGH | ⏳ Week 2 |
+| RP-08 | HPS Tidak Didukung Minimum 2 Sumber Harga | PBJ-HPS | CRITICAL | ✅ Done |
+| RP-09 | RFI Lewat Masa Berlaku Penawaran | PBJ-RFI | MEDIUM | ⏳ Week 2 |
+| RP-10 | RFI dari Vendor Anak Perusahaan Sama | PBJ-RFI | HIGH | ⏳ Week 2 |
+| RP-11 | Kontrak Tidak Memuat Pasal Denda SLA | PBJ-KONTRAK | HIGH | ⏳ Week 2 |
+| RP-12 | Nilai Kontrak > 80% HPS Tanpa Justifikasi | PBJ-KONTRAK | MEDIUM | ⏳ Week 2 |
+| RP-13 | Jangka Waktu Kontrak Inkonsisten KAK ↔ Kontrak | PBJ-TRACEABILITY | MEDIUM | ⏳ Week 2 |
+
+#### Reviu RKA-K/L (target 13 pattern)
+
+| ID | Judul (rencana) | Kategori | Severity | Status |
+|----|------|----------|----------|--------|
+| RKA-01 | TOR Tidak Memuat 7 Blok Substansi | RKA-TOR | HIGH | ✅ Done |
+| RKA-02 | Indikator Kinerja TOR Tidak Terukur | RKA-TOR | HIGH | ⏳ Week 1 |
+| RKA-03 | RAB Tidak Konsisten dengan TOR | RKA-CASCADING | HIGH | ⏳ Week 1 |
+| RKA-04 | Akun Belanja RAB Tidak Sesuai BAS | RKA-RAB | MEDIUM | ⏳ Week 1 |
+| RKA-05 | SBM Lewat Tahun Anggaran | RKA-SBM | MEDIUM | ⏳ Week 1 |
+| RKA-06 | Honorarium di Atas Plafon SBM | RKA-SBM | HIGH | ⏳ Week 2 |
+| RKA-07 | Belanja Perjalanan Dinas Tidak Wajar | RKA-RAB | MEDIUM | ⏳ Week 2 |
+| RKA-08 | Cascading Output ke Komponen Tidak Konsisten | RKA-CASCADING | HIGH | ⏳ Week 2 |
+| RKA-09 | Penandaan Output Tidak Sesuai Renstra | RKA-PENANDAAN | LOW | ⏳ Week 2 |
+| RKA-10 | KPI Tidak Selaras dengan RO | RKA-KPI | HIGH | ⏳ Week 2 |
+| RKA-11 | Anggaran Konsultan Tanpa TOR Terlampir | RKA-RAB | MEDIUM | ⏳ Week 2 |
+| RKA-12 | RAB Sosialisasi/FGD Tanpa Output Konkret | RKA-RAB | LOW | ⏳ Week 2 |
+| RKA-13 | Anggaran Operasional Lebih dari 30% Total | RKA-RAB | MEDIUM | ⏳ Week 2 |
+
+### Workflow populate pattern
+
+1. **Identifikasi** — auditor seniors tarik temuan top dari LHR historis 2024–2025
+2. **Drafting** — auditor tulis pattern di template `.md` dengan YAML frontmatter
+3. **Review** — Pengendali Teknis review pattern (severity, kriteria_baku akurat)
+4. **Commit** — push ke `wiki/temuan-patterns/{skill}/` + update tabel index di README per skill
+5. **Validation** — run agen di penugasan sample → cek apakah pattern terpanggil + di-pakai
+
+### Catatan kualitas pattern
+
+- **Severity calibration:** CRITICAL hanya untuk pelanggaran peraturan inti (Perpres, PMK, UU). HIGH untuk kepatuhan substantif. MEDIUM/LOW untuk best-practice
+- **Kriteria_baku WAJIB sebut pasal/ayat** — tidak boleh "berdasarkan peraturan yang berlaku"
+- **Bukti yang harus dicari** — tabel dokumen + field, agar agen bisa target verifikasi PDF tepat
+- **Rekomendasi standar opsional** — kalau ada, KT bisa langsung pakai
+
+---
+
+## 6. CACM Integration Design Detail
+
+### Asumsi
+
+- **CACM** = sistem internal Komdigi (yang sudah ada) untuk Continuous Auditing & Continuous Monitoring per Satker
+- Akses via web browser dashboard (tidak ada REST API resmi)
+- Sudah ada skill `ews-cacm-komdigi` yang melakukan polling EWS dengan Claude in Chrome — kita pakai pattern yang sama
+
+### Komponen baru di v7
+
+#### 6.1. CACM Connector Module
+
+**Lokasi:** `backend/app/integrations/cacm/`
+
+```
+cacm/
+├── __init__.py
+├── client.py         # Claude in Chrome wrapper (login, navigate, scrape)
+├── parser.py         # parse halaman CACM → struktur signal
+├── models.py         # CacmSignal pydantic model
+└── scheduler.py      # cron job pull CACM tiap pagi
+```
+
+**CacmSignal schema:**
+```python
+class CacmSignal(BaseModel):
+    signal_id: str               # unique per polling cycle
+    satker: str                  # e.g. "DIT. PENGENDALIAN APLIKASI"
+    kategori: Literal["ANGGARAN", "PENGADAAN", "KINERJA", "PRIORITAS"]
+    severity: Literal["MERAH", "KUNING", "HIJAU"]
+    metric: str                  # e.g. "realisasi_q1_persen"
+    value: float                 # e.g. 58.2
+    threshold: float             # e.g. 75.0
+    deskripsi: str               # narasi ringkas dari CACM
+    cacm_url: HttpUrl            # link ke halaman detail di CACM
+    captured_at: datetime
+```
+
+#### 6.2. Inbound: Penugasan auto-create dari signal CACM
+
+**Endpoint baru:** `POST /cacm/alert` (internal, dipanggil scheduler)
+
+Logic:
+1. Receive `CacmSignal[]`
+2. Filter signal severity MERAH/KUNING saja
+3. Untuk tiap signal:
+   - Cek apakah sudah ada penugasan aktif untuk Satker + kategori serupa (anti-duplicate)
+   - Bila belum: buat `Penugasan` baru dengan `status=USULAN_CACM`, isi `context.md` dengan signal data, attach CACM URL sebagai dokumen referensi
+   - Tag penugasan dengan `signal_id` di field metadata
+
+**UI:**
+- List penugasan tab "Usulan CACM" (badge merah) untuk auditor PM/PT
+- Klik penugasan → halaman review dengan signal detail + tombol "Terima sebagai penugasan" / "Tolak"
+- Bila terima: status berubah `DRAFT`, masuk pipeline normal
+
+#### 6.3. Outbound: Push hasil reviu ke CACM annotation
+
+**Endpoint baru:** `POST /cacm/sync` (dipanggil setelah QC PASS)
+
+Logic:
+1. Setelah `run_qc_kkp` / `run_qc_lhp` return PASS, trigger sync
+2. Format payload:
+   ```json
+   {
+     "satker": "DIT. PENGENDALIAN APLIKASI",
+     "penugasan_kode": "2026-05-reviurka-...",
+     "tanggal_lhr": "2026-06-15",
+     "ringkasan": "5 temuan (1 CRITICAL, 2 HIGH, 2 MEDIUM)",
+     "url_lhr": "https://audit-ai-v7.vercel.app/penugasan/123",
+     "lampiran_lhr_url": "..."
+   }
+   ```
+3. Push via Claude in Chrome ke CACM annotation field per Satker
+
+**Catatan:** Karena tidak ada API, mekanisme ini paste teks ke text field di CACM dashboard, ATAU export PDF dan upload sebagai attachment. Detail teknis di Week 3.
+
+#### 6.4. Auth & Operations
+
+| Aspek | Pendekatan |
+|-------|------------|
+| Login CACM | Auditor login manual di Chrome 1x, cookie disimpan di profile khusus untuk scheduled task |
+| Frekuensi polling | Tiap pagi 06:00 WIB (sebelum jam kerja) — cukup untuk daily signals |
+| Retry policy | 3x retry dengan exponential backoff, lalu fail-loud (notifikasi ke auditor) |
+| Monitoring | Log per cycle: jumlah signals di-fetch, jumlah jadi penugasan, jumlah duplicate. Dashboard `/cacm/health` |
+| Failure mode | Bila scrape gagal 2 hari berturut-turut, kirim email alert ke PM |
+
+#### 6.5. Risk mitigation
+
+- **Layout CACM berubah** → konfigurasikan selector di JSON, tidak hardcode di Python. Auditor bisa update tanpa redeploy
+- **Cookie expired** → cek di awal setiap cycle; bila gagal login, lapor segera
+- **Signal palsu / false positive CACM** → auditor manual filter via UI "Tolak" — bukan v7 yang validate, biar reproducible
+
+---
+
+## 7. Risiko & Mitigasi
+
+| # | Risiko | Likelihood | Dampak | Mitigasi |
+|---|--------|-----------|--------|----------|
+| R1 | Anthropic API rate limit di production | Medium | High | Set budget alert + queue mechanism + caching context |
+| R2 | CACM scraping rusak karena layout berubah | High | Medium | Selector config eksternal, monitoring + alert |
+| R3 | Wiki tidak terisi sesuai target karena auditor sibuk | High | High | Workshop wajib minggu 1 + 2 (4 jam total). PT/PM accountable |
+| R4 | Multi-anggota workflow blocked oleh model permissions | Low | Medium | Test early di Week 2, fallback ke 1-anggota mode kalau perlu |
+| R5 | Production deploy gagal saat redeploy karena pydantic upgrade | Low | High | Test pip install di local venv dulu sebelum push ke Fly |
+| R6 | User adoption rendah | Medium | High | UAT real penugasan + dokumentasi video + training session |
+| R7 | Data sensitive bocor (temuan tampil di CACM yang lebih luas) | Low | CRITICAL | Audit logging, ACL per Satker, review SOP sebelum prod |
+
+---
+
+## 8. Success Criteria (Definition of Done)
+
+Roadmap dikatakan berhasil bila per 19 Juni 2026:
+
+### Quantitative
+
+- ✅ ≥25 pattern terisi di wiki
+- ✅ ≥3 penugasan UAT lulus E2E (1 RKA, 1 PBJ manual, 1 PBJ dari CACM)
+- ✅ Time-to-result < 10 menit per penugasan
+- ✅ Production uptime ≥ 99% selama Week 4
+- ✅ 0 edit ke V6 oleh agen (verified via git diff backend/v6/)
+- ✅ Feedback agen menghasilkan ≥3 pattern baru yang merged ke wiki
+
+### Qualitative
+
+- ✅ Auditor merasa output AI agen reliable enough untuk dipakai sebagai draft KKP/LHR
+- ✅ KT bisa setup penugasan baru dari nol via UI tanpa edit JSON manual
+- ✅ Penugasan dari CACM signal terbukti relevan (≥70% accept rate dari auditor)
+
+---
+
+## 9. Tim & Tanggung Jawab
+
+| Role | Tanggung Jawab | Allocation |
+|------|----------------|------------|
+| Inspektur II (PM) | Approve roadmap, review milestone mingguan, accountable terhadap delivery | 1 hari/minggu |
+| Pengendali Teknis (PT) | Review pattern wiki, technical decision (mis. terima/tolak signal CACM), validasi UAT | 2 hari/minggu |
+| Ketua Tim Audit | Workshop wiki, populate pattern, test KT flow, jadi auditor di UAT | 3 hari/minggu |
+| Anggota Tim Audit (2 orang) | Test E2E pipeline, isi pattern reviu-rka-kl, jadi auditor di UAT | 2 hari/minggu each |
+| Developer (Irfan) | Implementasi semua deliverable W1-W4, deploy, monitoring | 5 hari/minggu |
+
+---
+
+## 10. Deliverables Checklist
+
+### Minggu 1
+- [ ] Agen Ketua Tim ekstrak sasaran (kode + prompt + tool baru)
+- [ ] UI tab "Setup Penugasan" untuk KT
+- [ ] Production redeploy + verify AI jalan di Fly.io
+- [ ] 10 pattern wiki di-merge (5 RP + 5 RKA, total 12 dengan yang sudah ada)
+- [ ] E2E test reviu-rka-kl 1 penugasan
+
+### Minggu 2
+- [ ] 15+ pattern wiki tambahan
+- [ ] Multi-anggota workflow (model + UI + role gating)
+- [ ] SSE streaming UI chat
+- [ ] Dashboard `/feedback` aggregate
+- [ ] Hydration warning fix
+- [ ] Riwayat agent run UI
+
+### Minggu 3
+- [ ] CACM connector module + parser
+- [ ] Endpoint POST `/cacm/alert` + auto-create penugasan dari signal
+- [ ] UI badge "Usulan CACM" + tab review
+- [ ] Endpoint POST `/cacm/sync` + push annotation
+- [ ] Scheduled task daily 06:00 WIB
+- [ ] Training session handle penugasan dari CACM
+
+### Minggu 4
+- [ ] Performance optimization (caching, parallel calls)
+- [ ] Backup/restore SOP + test recovery
+- [ ] Budget alert Anthropic + Fly
+- [ ] User docs PDF + video tutorial 15 mnt
+- [ ] Wiki workshop 4 jam
+- [ ] UAT 3 penugasan real
+- [ ] Handover meeting + retrospective
+
+---
+
+## 11. Out of Scope (Tahap-2)
+
+Hal yang **TIDAK** termasuk dalam roadmap 1 bulan ini:
+
+- ❌ Migrasi ke PDN (Pusat Data Nasional) — masuk Tahap-2 setelah masa percontohan
+- ❌ Multi-tenant (lebih dari Inspektorat II) — tunggu validasi pilot
+- ❌ Skill audit baru di luar reviu-rka-kl + reviu-pengadaan
+- ❌ Mobile app
+- ❌ Integration dengan SIPD, OM-SPAN, atau sistem fiskal lain
+- ❌ Auto-respond komentar BPK / ITKD via AI
+
+---
+
+## 12. Communication Cadence
+
+| Forum | Frekuensi | Peserta | Output |
+|-------|-----------|---------|--------|
+| Stand-up dev | Harian 15 menit | Dev | Update progress + blocker |
+| Mingguan PM review | Tiap Jumat 1 jam | Inspektur + PT + Dev | Update milestone, demo deliverable minggu ini, plan minggu depan |
+| Wiki workshop | 2x (W1 + W2) | Semua tim audit | Drafting pattern bersama, kalibrasi severity |
+| Retrospective | End-of-roadmap 19 Juni | Semua | Lessons learned, roadmap Tahap-2 |
+
+---
+
+## 13. Lihat Juga
+
+- [README.md](README.md) — setup dev lokal + arsitektur teknis
+- [DEPLOY.md](DEPLOY.md) — panduan deploy Fly.io + Vercel
+- [wiki/README.md](wiki/README.md) — panduan menulis pattern temuan
+- `backend/app/prompts/*.md` — system prompts per agen
+
+---
+
+*Dokumen ini dibuat 20 Mei 2026, akan di-update setiap akhir minggu sebagai bagian dari workflow.*

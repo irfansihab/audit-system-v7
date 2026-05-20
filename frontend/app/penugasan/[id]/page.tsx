@@ -279,14 +279,18 @@ function ChatTab({
           </div>
         )}
         {result?.tool_calls && result.tool_calls.length > 0 && (
-          <div className="mt-3">
-            <h4 className="text-xs uppercase text-gray-500 font-semibold mb-2">Tool calls ({result.tool_calls.length})</h4>
-            {result.tool_calls.map((tc, i) => (
-              <div key={i} className="bg-yellow-50 border-l-2 border-accent rounded-r-lg p-2 text-xs font-mono mb-1">
-                → {tc.tool}({JSON.stringify(tc.input).slice(0, 120)}…)
-              </div>
-            ))}
-          </div>
+          <details className="mt-3">
+            <summary className="text-xs uppercase text-gray-500 font-semibold cursor-pointer hover:text-gray-700 select-none">
+              Audit trail · {result.tool_calls.length} tool call{result.tool_calls.length === 1 ? '' : 's'} (klik untuk buka)
+            </summary>
+            <div className="mt-2">
+              {result.tool_calls.map((tc, i) => (
+                <div key={i} className="bg-yellow-50 border-l-2 border-accent rounded-r-lg p-2 text-xs font-mono mb-1">
+                  → {tc.tool}({JSON.stringify(tc.input).slice(0, 120)}…)
+                </div>
+              ))}
+            </div>
+          </details>
         )}
       </div>
 
@@ -312,24 +316,232 @@ function ChatTab({
     </div>
   );
 }
+type FileEntry = {
+  name: string;
+  path: string;
+  size_bytes: number;
+  mtime: string;
+  ext: string;
+};
+
+type FileCategory = {
+  key: string;
+  label: string;
+  files: FileEntry[];
+};
+
+function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+
+function formatTime(iso: string): string {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleString('id-ID', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  } catch {
+    return iso;
+  }
+}
+
+function iconForExt(ext: string): string {
+  switch (ext) {
+    case '.docx':
+      return '📄';
+    case '.pdf':
+      return '📕';
+    case '.json':
+    case '.jsonl':
+      return '🔧';
+    case '.md':
+      return '📝';
+    case '.xlsx':
+    case '.csv':
+      return '📊';
+    case '.txt':
+    case '.log':
+      return '📃';
+    default:
+      return '📎';
+  }
+}
+
+const PREVIEWABLE = new Set(['.md', '.json', '.jsonl', '.txt', '.csv', '.log']);
+
 function OutputTab({ penugasan }: { penugasan: Penugasan }) {
+  const [categories, setCategories] = useState<FileCategory[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [preview, setPreview] = useState<{ path: string; content: string; truncated: boolean } | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
+
+  const fetchFiles = async () => {
+    setLoading(true);
+    try {
+      const res = await api.listFiles(penugasan.id);
+      setCategories(res.categories);
+      setError(null);
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [penugasan.id]);
+
+  const handleDownload = async (file: FileEntry) => {
+    try {
+      const blob = await api.downloadFile(penugasan.id, file.path);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (e: any) {
+      setError(e.message);
+    }
+  };
+
+  const handlePreview = async (file: FileEntry) => {
+    setPreviewLoading(true);
+    try {
+      const res = await api.previewFile(penugasan.id, file.path);
+      setPreview({ path: res.path, content: res.content, truncated: res.truncated });
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const isEmpty = !loading && (categories === null || categories.length === 0);
+
   return (
     <div>
-      <h2 className="text-lg font-bold text-primary-dark mb-3">Output &amp; Laporan QC</h2>
-      <div className="bg-white border border-gray-200 rounded-lg p-5 text-sm text-gray-600">
-        <p className="mb-2">
-          File output disimpan di folder server: <code className="bg-gray-100 px-1 rounded">{penugasan.folder_path}</code>
-        </p>
-        <ul className="list-disc pl-5 space-y-1">
-          <li><code>_KKP/temuan.json</code> — master temuan</li>
-          <li><code>_KKP/KKP-{`{nama-anggota}`}.docx</code> — KKP per anggota</li>
-          <li><code>_LHP/LHR-DRAFT.docx</code> — LHR (oleh Ketua Tim)</li>
-          <li><code>_QA-SAIPI/laporan-qa-kkp.md</code>, <code>laporan-qa-lhp.md</code></li>
-        </ul>
-        <p className="mt-3 text-xs text-gray-500">
-          (Halaman download &amp; preview akan ditambahkan setelah workflow ujicoba berhasil.)
-        </p>
+      <div className="flex justify-between items-center mb-3">
+        <h2 className="text-lg font-bold text-primary-dark">Output &amp; Laporan QC</h2>
+        <button
+          onClick={fetchFiles}
+          className="px-3 py-1.5 text-xs rounded border border-gray-300 hover:bg-gray-50"
+          disabled={loading}
+        >
+          {loading ? 'Memuat…' : '↻ Refresh'}
+        </button>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 rounded bg-red-50 border border-red-200 text-red-700 text-sm">
+          {error}
+        </div>
+      )}
+
+      {loading && (
+        <div className="bg-white border border-gray-200 rounded-lg p-5 text-sm text-gray-500">
+          Memuat daftar file…
+        </div>
+      )}
+
+      {isEmpty && (
+        <div className="bg-white border border-gray-200 rounded-lg p-5 text-sm text-gray-600">
+          <p className="mb-2">
+            Belum ada file output. Jalankan agen di tab <strong>Chat</strong> untuk men-generate KKP, LHR, laporan QA.
+          </p>
+          <p className="text-xs text-gray-500">
+            Folder server: <code className="bg-gray-100 px-1 rounded">{penugasan.folder_path}</code>
+          </p>
+        </div>
+      )}
+
+      {!loading && categories && categories.length > 0 && (
+        <div className="space-y-4">
+          {categories.map((cat) => (
+            <div key={cat.key} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+              <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+                <div>
+                  <span className="font-semibold text-sm text-primary-dark">{cat.label}</span>
+                  <span className="ml-2 text-xs text-gray-500">({cat.files.length} file)</span>
+                </div>
+                <code className="text-xs text-gray-400">{cat.key}</code>
+              </div>
+              <table className="w-full text-sm">
+                <tbody>
+                  {cat.files.map((f) => (
+                    <tr key={f.path} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
+                      <td className="px-4 py-2 w-8 text-base">{iconForExt(f.ext)}</td>
+                      <td className="px-2 py-2">
+                        <div className="font-medium">{f.name}</div>
+                        <div className="text-xs text-gray-400 font-mono">{f.path}</div>
+                      </td>
+                      <td className="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">
+                        {formatBytes(f.size_bytes)}
+                      </td>
+                      <td className="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">
+                        {formatTime(f.mtime)}
+                      </td>
+                      <td className="px-2 py-2 text-right whitespace-nowrap">
+                        {PREVIEWABLE.has(f.ext) && (
+                          <button
+                            onClick={() => handlePreview(f)}
+                            className="text-xs px-2 py-1 rounded border border-gray-300 hover:bg-gray-100 mr-1"
+                            disabled={previewLoading}
+                          >
+                            Preview
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDownload(f)}
+                          className="text-xs px-2 py-1 rounded bg-primary text-white hover:bg-primary-dark"
+                        >
+                          Download
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {preview && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-6 z-50">
+          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[85vh] flex flex-col">
+            <div className="flex justify-between items-center px-5 py-3 border-b border-gray-200">
+              <div className="font-mono text-sm">{preview.path}</div>
+              <button
+                onClick={() => setPreview(null)}
+                className="text-gray-500 hover:text-gray-800 text-xl"
+                aria-label="Tutup preview"
+              >
+                ×
+              </button>
+            </div>
+            <pre className="flex-1 overflow-auto p-5 text-xs whitespace-pre-wrap font-mono bg-gray-50">
+              {preview.content}
+            </pre>
+            {preview.truncated && (
+              <div className="px-5 py-2 text-xs text-amber-700 bg-amber-50 border-t border-amber-200">
+                File besar — hanya 50 KB awal yang ditampilkan. Klik Download untuk file lengkap.
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

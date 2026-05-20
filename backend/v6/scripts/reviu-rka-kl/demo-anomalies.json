@@ -1,0 +1,499 @@
+{
+  "metadata": {
+    "tor_source": "TOR 2027-Fasilitasi Sektor Pertanian-Rev2.docx.pdf",
+    "rab_source": "RAB 2027-Pertanian-Review 2.pdf",
+    "total_rules_tested": 18,
+    "total_anomalies_found": 16
+  },
+  "summary_by_aspek": {
+    "A": 2,
+    "B": 3,
+    "D": 4,
+    "E": 6,
+    "F": 1
+  },
+  "summary_by_severity": {
+    "PERINGATAN": 14,
+    "INFO": 2
+  },
+  "anomalies": [
+    {
+      "rule_id": "A.2",
+      "severity": "PERINGATAN",
+      "aspek": "A",
+      "judul": "Sewa kendaraan untuk pejabat eselon I/II — total Rp 168,090,000",
+      "deskripsi": "Ditemukan 8 line item sewa kendaraan yang secara eksplisit menyebut Menteri/Dirjen/Direktur dalam deskripsinya.",
+      "bukti": {
+        "items": [
+          {
+            "komponen": "7444.QDC.001.051",
+            "akun": "522141",
+            "nama_akun": "BELANJA SEWA",
+            "deskripsi": "a. Sewa kendaraan survey lokasi dan commissionning Kab. Pati untuk Dirjen dan Direktur",
+            "volume": 12,
+            "satuan": "OH",
+            "harga_satuan": 1347000,
+            "total": 16164000
+          },
+          {
+            "komponen": "7444.QDC.001.051",
+            "akun": "522141",
+            "nama_akun": "BELANJA SEWA",
+            "deskripsi": "b. Sewa kendaraan survey lokasi dan commissionning Kab. Bima untuk Dirjen dan Direktur",
+            "volume": 12,
+            "satuan": "OH",
+            "harga_satuan": 1103000,
+            "total": 13236000
+          },
+          {
+            "komponen": "7444.QDC.001.051",
+            "akun": "522141",
+            "nama_akun": "BELANJA SEWA",
+            "deskripsi": "c. Sewa kendaraan survey lokasi dan commissionning Kab. Tanah Datar untuk Dirjen dan Direktur",
+            "volume": 12,
+            "satuan": "OH",
+            "harga_satuan": 922000,
+            "total": 11064000
+          },
+          {
+            "komponen": "7444.QDC.001.051",
+            "akun": "522141",
+            "nama_akun": "BELANJA SEWA",
+            "deskripsi": "d. Sewa kendaraan survey lokasi dan commissionning Kab. Tana Toraja untuk Dirjen dan Direktur",
+            "volume": 12,
+            "satuan": "OH",
+            "harga_satuan": 938000,
+            "total": 11256000
+          },
+          {
+            "komponen": "7444.QDC.001.052",
+            "akun": "522141",
+            "nama_akun": "BELANJA SEWA",
+            "deskripsi": "a. Sewa kendaraan survey lokasi dan commissionning Kab. Pati untuk Menteri, Dirjen dan Direktur",
+            "volume": 27,
+            "satuan": "OH",
+            "harga_satuan": 1347000,
+            "total": 36369000
+          },
+          {
+            "komponen": "7444.QDC.001.052",
+            "akun": "522141",
+            "nama_akun": "BELANJA SEWA",
+            "deskripsi": "b. Sewa kendaraan survey lokasi dan commissionning Kab. Bima untuk Menteri, Dirjen dan Direktur",
+            "volume": 27,
+            "satuan": "OH",
+            "harga_satuan": 1103000,
+            "total": 29781000
+          },
+          {
+            "komponen": "7444.QDC.001.052",
+            "akun": "522141",
+            "nama_akun": "BELANJA SEWA",
+            "deskripsi": "c. Sewa kendaraan survey lokasi dan commissionning Kab. Tanah Datar untuk Menteri, Dirjen dan Direktur",
+            "volume": 27,
+            "satuan": "OH",
+            "harga_satuan": 922000,
+            "total": 24894000
+          },
+          {
+            "komponen": "7444.QDC.001.052",
+            "akun": "522141",
+            "nama_akun": "BELANJA SEWA",
+            "deskripsi": "d. Sewa kendaraan survey lokasi dan commissionning Kab. Tana Toraja untuk Menteri, Dirjen dan Direktur",
+            "volume": 27,
+            "satuan": "OH",
+            "harga_satuan": 938000,
+            "total": 25326000
+          }
+        ],
+        "total": 168090000
+      },
+      "draft_catatan": {
+        "kondisi": "RAB mengalokasikan sewa kendaraan untuk Menteri/Dirjen/Direktur pada 8 line item dengan total Rp 168,090,000. Line item pertama: a. Sewa kendaraan survey lokasi dan commissionning Kab. Pati untuk Dirjen dan Direktur.",
+        "kriteria": "Pasal 14 PMK 62/2023 — prinsip efisiensi dan kewajaran; PMK SBM — batasan satuan sewa kendaraan operasional. Kegiatan commissioning dan survey lokasi bersifat teknis, umumnya didelegasikan ke tim teknis/pejabat Eselon III/IV.",
+        "akibat": "Alokasi tidak proporsional dapat menurunkan nilai value for money, berisiko ditolak pada penelaahan Kementerian Keuangan, dan memunculkan catatan pemeriksaan atas perjalanan dinas yang tidak esensial.",
+        "rekomendasi": "Unit penyusun mempertimbangkan delegasi commissioning/survey kepada tim teknis setingkat Eselon III/IV; kehadiran pejabat Eselon I/II dijadwalkan pada momentum strategis (mis. Panen Raya), bukan survey awal."
+      }
+    },
+    {
+      "rule_id": "A.3",
+      "severity": "INFO",
+      "aspek": "A",
+      "judul": "Keterbatasan referensi SBM TA 2027 — verifikasi kewajaran tidak penuh",
+      "deskripsi": "PMK SBM TA 2027 perlu dikonfirmasi ketersediaannya saat reviu. Bila belum terbit, kewajaran satuan biaya hanya dapat dibandingkan dengan PMK SBM 2026 secara proksi.",
+      "bukti": {
+        "tahun_reviu": 2027
+      },
+      "draft_catatan": {
+        "kondisi": "PMK Standar Biaya Masukan TA 2027 belum tersedia saat reviu. Verifikasi kewajaran satuan biaya (uang harian, tiket, honor narasumber, paket meeting) dilakukan dengan pembanding PMK SBM TA 2026.",
+        "kriteria": "Pasal 61 ayat (2) huruf a PMK 107/2024 — reviu kelayakan terhadap SBM. Dalam hal standar belum tersedia, keterbatasan wajib dinyatakan dalam laporan.",
+        "akibat": "Potensi perubahan nominal pada tahap Pagu Anggaran bila PMK SBM TA 2027 menetapkan satuan biaya yang berbeda.",
+        "rekomendasi": "Unit penyusun agar bersiap melakukan penyesuaian satuan biaya saat PMK SBM TA 2027 terbit, dan menyampaikannya kembali pada tahap Pagu Anggaran."
+      }
+    },
+    {
+      "rule_id": "B.1",
+      "severity": "PERINGATAN",
+      "aspek": "B",
+      "judul": "Akun 526xxx (Bantuan Lainnya) digunakan untuk line-item sewa",
+      "deskripsi": "Akun 526xxx ditujukan untuk Bantuan Pemerintah. Ditemukan 1 akun 526 yang rinciannya memuat 'sewa'.",
+      "bukti": {
+        "hits": [
+          {
+            "komponen": "7444.QDC.001.052",
+            "akun": "526313",
+            "nama_akun": "BELANJA BARANG UNTUK BANTUAN LAINNYA YANG MEMILIKI KARAKTERISTIK",
+            "sewa_rincian_count": 3,
+            "total_akun": 2500000000
+          }
+        ]
+      },
+      "draft_catatan": {
+        "kondisi": "RAB menggunakan akun 526313 \"BELANJA BARANG UNTUK BANTUAN LAINNYA YANG MEMILIKI KARAKTERISTIK\" untuk rincian sewa (termasuk 3 line sewa perangkat). Akun ini biasanya untuk Bantuan Pemerintah dengan kriteria penerima bantuan yang ditetapkan.",
+        "kriteria": "PMK 102/2018 jo. PMK 187/2019 tentang Klasifikasi Anggaran. Akun 526 untuk bantuan yang alokasinya kepada penerima bantuan (ada kriteria, skema, persyaratan); akun 522141 untuk belanja sewa biasa; akun 522191 untuk jasa lainnya.",
+        "akibat": "Ketidaktepatan klasifikasi berpotensi: (a) koreksi akun pada penelaahan Pagu Anggaran/Alokasi, (b) mempengaruhi kewenangan persetujuan pembayaran, (c) berimplikasi pada mekanisme pertanggungjawaban dan pelaporan keuangan.",
+        "rekomendasi": "Unit penyusun berkoordinasi dengan Biro Keuangan dan Direktorat Sistem Penganggaran DJA untuk memastikan kesesuaian akun 526xxx atau migrasikan ke akun 522191/522141 dengan skema pengadaan biasa."
+      }
+    },
+    {
+      "rule_id": "B.2",
+      "severity": "PERINGATAN",
+      "aspek": "B",
+      "judul": "Akun 522191 (Jasa Lainnya) digunakan untuk konstruksi/properti panggung",
+      "deskripsi": "Konstruksi panggung umumnya masuk Belanja Barang Non-Operasional/Belanja Modal; properti sewaan masuk Belanja Sewa (522141).",
+      "bukti": {
+        "hits": [
+          {
+            "komponen": "unknown",
+            "akun": "522191",
+            "konstruksi_count": "?",
+            "samples": [
+              "konstruksi panggung panen raya (terdeteksi di raw text)"
+            ]
+          }
+        ]
+      },
+      "draft_catatan": {
+        "kondisi": "RAB akun 522191 \"Belanja Jasa Lainnya\" mengalokasikan line-item untuk konstruksi/properti panggung. Akun ini ditujukan untuk jasa lainnya yang bersifat intangible — konstruksi fisik umumnya masuk Belanja Barang Non-Operasional/Belanja Modal; sewa properti masuk akun 522141.",
+        "kriteria": "PMK 102/2018 jo. PMK 187/2019 tentang Klasifikasi Anggaran; Pasal 14 PMK 62/2023 tentang ketepatan klasifikasi jenis belanja.",
+        "akibat": "Berpotensi koreksi klasifikasi akun pada tahap Pagu Anggaran dan risiko temuan pemeriksaan BPK/BPKP pada saat pelaksanaan.",
+        "rekomendasi": "Unit penyusun memilah komponen panggung: konstruksi fisik ke Belanja Barang Non-Operasional/Modal; sewa properti ke akun 522141; serta mempertimbangkan pengurangan besaran bila dapat digantikan dengan sewa tenda/fasilitas lokal."
+      }
+    },
+    {
+      "rule_id": "B.3",
+      "severity": "PERINGATAN",
+      "aspek": "B",
+      "judul": "Duplikasi pola biaya: sewa kendaraan muncul di 2 komponen",
+      "deskripsi": "Line-item sewa kendaraan ditemukan di komponen: 7444.QDC.001.051, 7444.QDC.001.052. Pemisahan fungsi survey (051) dan commissioning (052) perlu dijelaskan agar tidak duplikatif.",
+      "bukti": {
+        "per_komponen": {
+          "7444.QDC.001.051": [
+            "a. Sewa kendaraan survey lokasi dan commissionning Kab. Pati untuk Dirjen dan Di",
+            "b. Sewa kendaraan survey lokasi dan commissionning Kab. Bima untuk Dirjen dan Di",
+            "c. Sewa kendaraan survey lokasi dan commissionning Kab. Tanah Datar untuk Dirjen"
+          ],
+          "7444.QDC.001.052": [
+            "a. Sewa kendaraan survey lokasi dan commissionning Kab. Pati untuk Menteri, Dirj",
+            "b. Sewa kendaraan survey lokasi dan commissionning Kab. Bima untuk Menteri, Dirj",
+            "c. Sewa kendaraan survey lokasi dan commissionning Kab. Tanah Datar untuk Menter"
+          ]
+        }
+      },
+      "draft_catatan": {
+        "kondisi": "Line-item sewa kendaraan ditemukan di 2 komponen RAB (7444.QDC.001.051, 7444.QDC.001.052). TOR belum memisahkan secara tegas kegiatan survey (tahap Persiapan) dan commissioning (tahap Implementasi), sehingga sebagian peserta/tujuan berpotensi beririsan.",
+        "kriteria": "Pasal 14 PMK 62/2023 — tidak ada duplikasi anggaran antar kegiatan/komponen; Kriteria IR2 butir 3.a — sub-komponen harus menjelaskan kebutuhan jumlah kegiatan, lokasi, dan stakeholder yang terlibat secara jelas.",
+        "akibat": "Risiko duplikasi biaya yang menurunkan efisiensi pagu dan berpotensi jadi temuan pemeriksaan.",
+        "rekomendasi": "Unit penyusun memisahkan jadwal, peserta, dan tujuan survey (hanya 051) dan commissioning (hanya 052) dengan tegas; rapat Jakarta yang substansinya sama digabung ke satu komponen utama."
+      }
+    },
+    {
+      "rule_id": "D.1",
+      "severity": "PERINGATAN",
+      "aspek": "D",
+      "judul": "Dasar hukum TOR: 5 dari 5 butir belum mencantumkan pasal/ayat spesifik",
+      "deskripsi": "Kriteria IR2 butir 1.a: penulisan dasar hukum diperjelas hingga pasal/ayat relevan.",
+      "bukti": {
+        "total_butir": 5,
+        "dengan_pasal": 0,
+        "tanpa_pasal": 5
+      },
+      "draft_catatan": {
+        "kondisi": "TOR bagian A.1 Dasar Hukum mencantumkan 5 regulasi; 5 butir hanya menyebut nomor regulasi tanpa pasal/ayat yang menjadi dasar hukum langsung atas RO.",
+        "kriteria": "Kriteria IR2 butir 1.a: \"Penulisan diperjelas secara spesifik hingga mencantumkan pasal dan/atau ayat yang relevan.\"",
+        "akibat": "Keterbatasan penelusuran landasan hukum spesifik mempersulit reviewer tahap selanjutnya memverifikasi keselarasan RO dengan mandat regulasi.",
+        "rekomendasi": "Unit penyusun menambahkan pasal/ayat relevan pada setiap butir dasar hukum."
+      }
+    },
+    {
+      "rule_id": "D.3",
+      "severity": "PERINGATAN",
+      "aspek": "D",
+      "judul": "Inkonsistensi Indikator Rincian Output (IRO): ditemukan 2 variasi nomenklatur",
+      "deskripsi": "IRO pada halaman sampul TOR, bagian D TOR, dan RAB menggunakan formulasi yang berbeda.",
+      "bukti": {
+        "tor_header": "Jumlah Masyarakat yang difasilitasi Pemanfaatan",
+        "tor_bagian_d": null,
+        "rab": "Jumlah Pengguna Teknologi Digital di Sektor Pertanian"
+      },
+      "draft_catatan": {
+        "kondisi": "Terdapat 2 formulasi IRO berbeda untuk RO yang sama: TOR header = \"Jumlah Masyarakat yang difasilitasi Pemanfaatan\"; TOR bagian D = \"-\"; RAB = \"Jumlah Pengguna Teknologi Digital di Sektor Pertanian\".",
+        "kriteria": "Kriteria IR2 butir 2.b dan PMK 107/2024 Pasal 61 ayat (2) huruf d — kelengkapan dan konsistensi dokumen pendukung.",
+        "akibat": "Ambiguitas indikator menyebabkan kesulitan pengukuran capaian pada akhir pelaksanaan; risiko capaian yang tidak dapat diverifikasi konsisten.",
+        "rekomendasi": "Unit penyusun menyamakan IRO pada seluruh bagian TOR (header, bagian D) dan RAB."
+      }
+    },
+    {
+      "rule_id": "D.5",
+      "severity": "PERINGATAN",
+      "aspek": "D",
+      "judul": "Matriks Manajemen Risiko belum memuat 4 elemen Kriteria IR2 butir 7",
+      "deskripsi": "Elemen yang belum ada: penilaian risiko residual, pemisahan risiko strategis/operasional, Loss Event Database tahun sebelumnya, keselarasan aplikasi MR K/L.",
+      "bukti": {
+        "ada_matriks": false,
+        "memuat_residual": false,
+        "memuat_strategis_operasional": false,
+        "memuat_led_tahun_sebelumnya": false,
+        "memuat_keselarasan_aplikasi_mr": false,
+        "jumlah_risiko_eselon_i": 4,
+        "jumlah_risiko_eselon_ii": 6
+      },
+      "draft_catatan": {
+        "kondisi": "TOR bagian Manajemen Risiko memuat matriks risiko (4 baris Eselon I, 6 baris Eselon II) namun belum memuat: penilaian risiko residual, pemisahan risiko strategis/operasional, Loss Event Database tahun sebelumnya, keselarasan aplikasi MR K/L.",
+        "kriteria": "Kriteria IR2 butir 7 — matriks risiko wajib memuat peristiwa, sebab, akibat, mitigasi, penilaian risiko residual, dan PIC; menjelaskan risiko strategis dan operasional; menyelaraskan dengan aplikasi MR K/L; mengakomodir Loss Event Database tahun sebelumnya.",
+        "akibat": "Tanpa risiko residual dan pemetaan operasional spesifik, mitigasi yang dirancang dapat tidak menjawab risiko riil di lapangan.",
+        "rekomendasi": "Unit penyusun melengkapi matriks risiko dengan penilaian risiko residual, pemisahan risiko strategis/operasional, Loss Event Database tahun sebelumnya, keselarasan aplikasi MR K/L; tambahkan pula risiko operasional spesifik RO (mis. kegagalan perangkat, literasi, cuaca)."
+      }
+    },
+    {
+      "rule_id": "D.6",
+      "severity": "PERINGATAN",
+      "aspek": "D",
+      "judul": "CBA kemungkinan tidak inline dengan 7 kelompok penerima manfaat",
+      "deskripsi": "TOR mengidentifikasi 7 kelompok penerima manfaat. Verifikasi apakah CBA mencakup benefit dari seluruh kelompok.",
+      "bukti": {
+        "jumlah_penerima_manfaat": 7,
+        "kelompok": [
+          "Kelompok tani Efisiensi biaya tani Implementasi dan tanaman (pemanfaatan pupuk, ",
+          "orang",
+          "Perusahaan Keberlangsungan bisnis; Pengembangan dan rintisan digital Pengembanga",
+          "Penyedia Jasa Perluasan jangkauan Penyediaan infrastruktur Telekomunikasi atau i",
+          "Kementerian/Le Pencapaian target K/L/D/I Sinkronisasi kebijakan, mbaga/Pemda/ te",
+          "Akademisi/Pergu Kesempatan menerapkan Kajian, inovasi teknologi, ruan Tinggi / h"
+        ]
+      },
+      "draft_catatan": {
+        "kondisi": "TOR bagian C mengidentifikasi 7 kelompok penerima manfaat, namun CBA umumnya hanya menghitung benefit dari kelompok utama. Verifikasi apakah CBA memperhitungkan manfaat seluruh kelompok (kelompok tani, startup, penyedia telekomunikasi, K/L, akademisi, masyarakat umum).",
+        "kriteria": "Kriteria IR2 butir 2: \"Penerima Manfaat harus inline dengan bagian CBA\"; Kriteria IR2 butir 6 CBA — penambahan data dukung skor benefit.",
+        "akibat": "CBA yang tidak mencakup seluruh penerima manfaat menghasilkan BCR yang under-estimated dan skor kelayakan yang tidak mencerminkan manfaat komprehensif.",
+        "rekomendasi": "Unit penyusun memperluas CBA dengan estimasi manfaat untuk kelompok penerima manfaat lain, sehingga skor CBA mencerminkan manfaat komprehensif yang inline dengan bagian C."
+      }
+    },
+    {
+      "rule_id": "E.1",
+      "severity": "PERINGATAN",
+      "aspek": "E",
+      "judul": "TOR menyebut 1 lokasi yang bukan lokasi target",
+      "deskripsi": "Lokasi target TA ini: ['Bima', 'Pati', 'Tana Toraja', 'Tanah Datar']. Narasi TOR juga menyebut: ['Banjarnegara'].",
+      "bukti": {
+        "lokasi_target": [
+          "Bima",
+          "Pati",
+          "Tana Toraja",
+          "Tanah Datar"
+        ],
+        "lokasi_non_target_disebut": [
+          "Banjarnegara"
+        ]
+      },
+      "draft_catatan": {
+        "kondisi": "TOR bagian B Lokasi menetapkan 4 lokasi target (Bima, Pati, Tana Toraja, Tanah Datar). Namun narasi TOR (mis. bagian Panen Raya atau baseline) juga menyebut lokasi berbeda: Banjarnegara. Terdapat indikasi sisa narasi dari TOR periode/sektor sebelumnya.",
+        "kriteria": "Kriteria IR2 butir 3.b — konsistensi internal TOR (WBS ↔ Metode Pelaksanaan ↔ Tahapan Waktu ↔ RAB saling selaras); Pasal 61 ayat (2) huruf d PMK 107/2024.",
+        "akibat": "Pembaca TOR akan mendapatkan informasi lokasi yang berbeda dari bagian ke bagian; meningkatkan risiko pertanyaan/penolakan pada tahap penelaahan.",
+        "rekomendasi": "Unit penyusun memeriksa dan mengganti narasi lokasi non-target dengan lokasi target TA ini, atau memberi penjelasan konteks yang jelas (baseline vs target) bila memang demikian."
+      }
+    },
+    {
+      "rule_id": "E.2",
+      "severity": "PERINGATAN",
+      "aspek": "E",
+      "judul": "Narasi sektor lain terdeteksi dalam TOR sektor '': ['energi', 'perikanan', 'pendidikan', 'kesehatan', 'maritim']",
+      "deskripsi": "Keyword sektor yang bukan topik RO ini muncul dalam narasi TOR — indikasi sisa copy-paste dari TOR sektor lain.",
+      "bukti": {
+        "leaks": [
+          {
+            "keyword": "energi",
+            "count_filtered": 2,
+            "samples": [
+              " Satuan Tugas Percepatan Hilirisasi dan Ketahanan Energi Nasional. 2. Gambaran Umum a. Urgensi Pertambahan jumlah penduduk Indonesia set",
+              "ong kemandirian bangsa melalui swasembada pangan, energi, air, ekonomi kreatif, ekonomi hijau, dan ekonomi biru. ● Asta cita 5: Melanjut"
+            ]
+          },
+          {
+            "keyword": "perikanan",
+            "count_filtered": 3,
+            "samples": [
+              "i Digital di Sektor Pemanfaatan Teknologi Digital perikanan: Penyusunan di Sektor perikanan: Manajemen Risiko, RB, Penyusunan Manajemen Kon",
+              "Teknologi Digital perikanan: Penyusunan di Sektor perikanan: Manajemen Risiko, RB, Penyusunan Manajemen Konten Publikasi Sosmed Risiko, RB,"
+            ]
+          },
+          {
+            "keyword": "pendidikan",
+            "count_filtered": 2,
+            "samples": [
+              "bada Pangan ◻ Digitalisasi ◻ Cek Kesehatan Gratis Pendidikan ◻ 30 Juta Rumah Cluster 2 ◻ UU/PP/Perpres/Kepres/Inpres (di luar Prioritas Pres",
+              "Pengalaman 1 Tenaga Ahli 1 org x - Menganalisis - Pendidikan minimal Bidang 1 bln penerapan S2 di bidang Teknologi teknologi Teknologi Digit"
+            ]
+          },
+          {
+            "keyword": "kesehatan",
+            "count_filtered": 2,
+            "samples": [
+              "i Bansos ◻ Swasembada Pangan ◻ Digitalisasi ◻ Cek Kesehatan Gratis Pendidikan ◻ 30 Juta Rumah Cluster 2 ◻ UU/PP/Perpres/Kepres/Inpres (di l",
+              "ategis (Pertanian, Maritim, Logistik, Pendidikan, Kesehatan, dan Pariwisata), dapat dipetakan kesiapan digital untuk sektor berdasarkan ska"
+            ]
+          },
+          {
+            "keyword": "maritim",
+            "count_filtered": 1,
+            "samples": [
+              "Penyedia Platform Teknologi Digital Pertanian dan maritim yang dibuat oleh Fakultas Teknologi Pertanian UGM pada tahun 2020 didapat ranta"
+            ]
+          }
+        ],
+        "topic_ro": ""
+      },
+      "draft_catatan": {
+        "kondisi": "TOR RO Sektor  memuat narasi yang menyebut sektor lain: energi, perikanan, pendidikan, kesehatan, maritim. Contoh: \" Satuan Tugas Percepatan Hilirisasi dan Ketahanan Energi Nasional. 2. Gambaran Umum a. Urgensi Pertambahan jumlah penduduk Indonesia set\" — indikasi sisa copy-paste dari TOR sektor lain yang belum disesuaikan.",
+        "kriteria": "Kriteria IR2 butir 3.b — konsistensi narasi komponen/aktivitas pada Metode Pelaksanaan dan Tahapan Waktu.",
+        "akibat": "Pembaca akan meragukan kualitas kontrol dokumen; berpotensi menurunkan kredibilitas usulan anggaran pada penelaahan DPR/DJA.",
+        "rekomendasi": "Unit penyusun melakukan find-and-replace menyeluruh pada TOR: ganti seluruh 'energi' menjadi '' di bagian yang relevan, dan lakukan proof-read akhir sebelum finalisasi."
+      }
+    },
+    {
+      "rule_id": "E.3",
+      "severity": "PERINGATAN",
+      "aspek": "E",
+      "judul": "Potensi inkonsistensi jumlah baseline: narasi menyebut [16, 11], tabel memuat 2 baris",
+      "deskripsi": "Perlu rekonsiliasi antara narasi dan tabel baseline TA sebelumnya.",
+      "bukti": {
+        "narasi_mention_jumlah_kelompok": [
+          16,
+          5,
+          11,
+          1
+        ],
+        "tabel_baseline_rows": 2
+      },
+      "draft_catatan": {
+        "kondisi": "TOR narasi baseline menyebut jumlah kelompok tani [16, 11], sedangkan tabel memuat 2 baris. Selisih tidak dijelaskan (apakah tambahan replikasi, kegagalan, atau duplikasi penamaan).",
+        "kriteria": "Kriteria IR2 butir 1.b.3 — kondisi eksisting/capaian tahun sebelumnya harus akurat dan dapat divalidasi.",
+        "akibat": "Baseline yang tidak akurat mempersulit penilaian kewajaran target TA berjalan dan memperumit pengukuran uplift capaian.",
+        "rekomendasi": "Unit penyusun merekonsiliasi narasi dan tabel — cantumkan jumlah kelompok tani aktual beserta status masing-masing (pilot/replikasi/tambahan)."
+      }
+    },
+    {
+      "rule_id": "E.4",
+      "severity": "PERINGATAN",
+      "aspek": "E",
+      "judul": "CBA menggunakan cost Rp 5,000,000,000, padahal pagu RO Rp 10,500,000,000",
+      "deskripsi": "BCR dihitung 1.20; jika pakai pagu penuh → BCR = 0.57 (Tidak Layak).",
+      "bukti": {
+        "bcr_numerator": 6000000000,
+        "bcr_denominator": 5000000000,
+        "pagu_RO": 10500000000,
+        "bcr_if_full": 0.571,
+        "interpretasi_if_full": "Tidak Layak",
+        "interpretasi_TOR": "Layak"
+      },
+      "draft_catatan": {
+        "kondisi": "CBA TOR menghitung BCR = Rp 6,000,000,000 ÷ Rp 5,000,000,000 ≈ 1.20 dengan interpretasi 'Layak'. Namun total pagu RO adalah Rp 10,500,000,000. Jika menggunakan cost penuh, BCR = 0.57 (Tidak Layak). TOR tidak menjelaskan bagaimana angka Rp 5,000,000,000 pada denominator BCR diperoleh.",
+        "kriteria": "Kriteria IR2 butir 6 — penambahan data dukung atas penilaian skor benefit; prinsip CBA umum — cost yang digunakan adalah total investasi kegiatan atau biaya relevan yang dapat dijustifikasi.",
+        "akibat": "Skor CBA 'Layak' dapat dipertanyakan akibat asumsi cost yang tidak konsisten; menurunkan kredibilitas justifikasi RO sebagai kontribusi Prioritas Nasional.",
+        "rekomendasi": "Unit penyusun: (a) mencantumkan justifikasi angka cost Rp 5,000,000,000 dalam narasi; (b) menghitung ulang BCR menggunakan total pagu Rp 10,500,000,000 sebagai baseline konservatif; (c) memperkaya data dukung skor aspek sosial, kelembagaan, dan lingkungan."
+      }
+    },
+    {
+      "rule_id": "E.5",
+      "severity": "PERINGATAN",
+      "aspek": "E",
+      "judul": "Tenaga Ahli pada TOR tidak memiliki line-item di RAB",
+      "deskripsi": "TOR menyebut kebutuhan Tenaga Ahli, tetapi RAB tidak memuat line-item honor Tenaga Ahli secara eksplisit.",
+      "bukti": {
+        "tor_mencantumkan": {
+          "disebut": true,
+          "jumlah": 0,
+          "nama_posisi": []
+        },
+        "rab_items_tenaga_ahli": 0
+      },
+      "draft_catatan": {
+        "kondisi": "TOR bagian Strategi Pencapaian mencantumkan kebutuhan Tenaga Ahli dengan kualifikasi dan pengalaman tertentu. RAB tidak memuat line-item yang secara eksplisit mengalokasikan honor/fee Tenaga Ahli.",
+        "kriteria": "Kriteria IR2 butir 3.a dan butir 5 — RAB disusun detail dan selaras dengan penjelasan Metode Pelaksanaan; Pasal 61 ayat (2) huruf e PMK 107/2024.",
+        "akibat": "Kebutuhan tenaga ahli yang tidak teralokasi berpotensi (a) kegiatan tidak terlaksana sesuai TOR, atau (b) biaya ditarik dari komponen lain.",
+        "rekomendasi": "Unit penyusun menambahkan line-item Honor Tenaga Ahli di RAB, atau memperjelas mapping-nya ke line-item Jasa Lainnya yang sudah ada dengan rincian yang transparan."
+      }
+    },
+    {
+      "rule_id": "E.6",
+      "severity": "PERINGATAN",
+      "aspek": "E",
+      "judul": "Rasio target per perangkat IoT = 5.0 orang/unit",
+      "deskripsi": "Target 250 orang dilayani oleh 50 unit perangkat IoT (rasio 5.0:1). Perlu justifikasi model pemanfaatan.",
+      "bukti": {
+        "target_orang": 250,
+        "total_unit_iot": 50,
+        "rasio_orang_per_unit": 5.0,
+        "items": [
+          {
+            "komponen": "7444.QDC.001.052",
+            "akun": "526313",
+            "nama_akun": "BELANJA BARANG UNTUK BANTUAN LAINNYA YANG MEMILIKI KARAKTERISTIK",
+            "deskripsi": "Sewa sensor IoT (NPK dan PH Tanah) tanaman pangan (2 musim tanam atau 6 bulan)",
+            "volume": 25,
+            "satuan": "Unit",
+            "harga_satuan": 25000000,
+            "total": 625000000
+          },
+          {
+            "komponen": "7444.QDC.001.052",
+            "akun": "526313",
+            "nama_akun": "BELANJA BARANG UNTUK BANTUAN LAINNYA YANG MEMILIKI KARAKTERISTIK",
+            "deskripsi": "Sewa perangkat IoT (Sensor suhu, kelembapan tanah, PH, intensitas Cahaya, nutrisi serta",
+            "volume": 25,
+            "satuan": "Unit",
+            "harga_satuan": 40000000,
+            "total": 1000000000
+          }
+        ]
+      },
+      "draft_catatan": {
+        "kondisi": "RAB mencantumkan 50 unit perangkat IoT untuk target 250 orang penerima manfaat (rasio 1 unit per 5.0 orang). TOR tidak menjelaskan model pemanfaatan: apakah 1 perangkat dipakai bergantian, dipasang di lahan kelompok tani, atau model lain.",
+        "kriteria": "Kriteria IR2 butir 1.b dan butir 3.a — WBS/deskripsi dan Metode Pelaksanaan yang menjelaskan kuantitas deliverable per sub-komponen.",
+        "akibat": "Ambiguitas rasio berdampak pada (a) ketidakjelasan model manfaat per penerima, (b) risiko tidak tercapainya kriteria 'menerima fasilitasi' bagi seluruh target, dan (c) ketidakseimbangan distribusi manfaat.",
+        "rekomendasi": "Unit penyusun menambahkan narasi pada TOR yang menjelaskan model pemanfaatan perangkat IoT dan menyelaraskannya dengan narasi Penerima Manfaat."
+      }
+    },
+    {
+      "rule_id": "F.1",
+      "severity": "INFO",
+      "aspek": "F",
+      "judul": "Narasi TOR merujuk 3 Asta Cita sekaligus: [2, 5, 6]",
+      "deskripsi": "Keselarasan dengan >2 Asta Cita sekaligus tanpa pemetaan kontribusi terukur menurunkan tajamnya justifikasi tematik.",
+      "bukti": {
+        "asta_cita_disebut": [
+          2,
+          5,
+          6
+        ],
+        "jumlah": 3
+      },
+      "draft_catatan": {
+        "kondisi": "TOR mengutip Asta Cita 2, 5, 6 sebagai dasar strategis RO. Klaim keselarasan dengan 3 Asta Cita secara bersamaan tanpa pemetaan kontribusi kuantitatif menurunkan tajamnya justifikasi tematik.",
+        "kriteria": "Kriteria IR2 sheet \"Aspek Reviu\" — Kesesuaian indikasi keluaran, lokasi, dan target dengan tupoksi & indikasi output prioritas pada RPJMN; pedoman penandaan tematik Bappenas.",
+        "akibat": "Penandaan tematik yang terlalu luas mengaburkan fokus evaluasi capaian Prioritas Nasional.",
+        "rekomendasi": "Unit penyusun menetapkan satu Asta Cita utama sebagai fokus dengan pemetaan kuantitatif kontribusi RO; keterkaitan dengan Asta Cita lain dijelaskan sebagai efek ganda tanpa penandaan utama."
+      }
+    }
+  ]
+}
