@@ -28,7 +28,7 @@ Hasil akhir: sistem siap dipakai produksi untuk 2 skill (Reviu RKA-K/L + Reviu P
 | Dev environment lokal | ✅ Stable | Setup gotcha didokumentasikan di README |
 | 4 agen Claude hardened | ✅ Stable | tools=[], strict prompt, MCP-only access |
 | Pipeline V6 reviu-pengadaan | ✅ Jalan E2E | 39 tool calls per run, QC PASS |
-| Pipeline V6 reviu-rka-kl | ⚠️ Belum di-test E2E | Tools tersedia tapi belum diverifikasi dengan dokumen nyata |
+| Pipeline V6 reviu-rka-kl | ✅ Jalan E2E | Via bridge staging (`_stage_rka_inputs`); 4/4 RO sukses, 25 anomali, LHR ter-render dengan dummy-test-docs RKA |
 | File output access (UI) | ✅ Stable | Tab Output & QC dengan download + preview |
 | Auto-ingestion on upload | ✅ Stable | BackgroundTask di POST `/dokumen` |
 | Wiki pattern library | ✅ Infrastruktur siap | Hanya 2 pattern contoh (RP-08, RKA-01) |
@@ -420,14 +420,14 @@ Roadmap dikatakan berhasil bila per 19 Juni 2026:
 - [ ] UI tab "Setup Penugasan" untuk KT
 - [ ] Production redeploy + verify AI jalan di Fly.io
 - [ ] 10 pattern wiki di-merge (5 RP + 5 RKA, total 12 dengan yang sudah ada)
-- [ ] E2E test reviu-rka-kl 1 penugasan
+- [x] E2E test reviu-rka-kl 1 penugasan ✅ done — bridge `run_batch_rka` di-fix (staging TOR/RAB ke `input/objek` + naming `[N]`), dummy-test-docs RKA diregenerate ke format PDF RKA-K/L, pipeline jalan E2E (exit 0, anomalies-master.json + LHR-DRAFT.docx)
 
 ### Minggu 2
 - [ ] 15+ pattern wiki tambahan
 - [ ] Multi-anggota workflow (model + UI + role gating)
-- [ ] SSE streaming UI chat
-- [ ] Dashboard `/feedback` aggregate
-- [ ] Hydration warning fix
+- [x] SSE streaming UI chat ✅ done — EventSource di ChatTab, render text + tool_use real-time, finalize ke DB lewat event `done`
+- [x] Dashboard `/feedback` aggregate ✅ done — backend `/feedback/aggregate` + `/feedback/list`, frontend page `/feedback` (KPI + heatmap + top issues + drill-down)
+- [x] Hydration warning fix ✅ done — mounted pattern di semua client page yang baca localStorage
 - [ ] Riwayat agent run UI
 
 ### Minggu 3

@@ -33,16 +33,23 @@ Generated otomatis — semua konten fiktif, tidak terkait dengan transaksi nyata
 
 ### Reviu RKA-K/L (skill: `reviu-rka-kl`)
 
-**4 TOR** — Term of Reference (struktur lengkap 7-8 blok)
+**4 TOR** — Term of Reference (format kertas-kerja RKA-K/L: identitas RO + dasar hukum + KPI + biaya)
 - `TOR-App-PDP-2026.pdf` — Rp 2,45 M
-- `TOR-Survei-Literasi-Digital-2026.pdf` — Rp 3,2 M
+- `TOR-Survei-Literasi-2026.pdf` — Rp 3,2 M
 - `TOR-Sosialisasi-PDP-2026.pdf` — Rp 1,8 M
 - `TOR-PDN-Tahap-2-2026.pdf` — Rp 15 M
 
-**3 RAB** — Rencana Anggaran Biaya (Excel, tabel akun)
-- `RAB-App-PDP-2026.xlsx`
-- `RAB-Survei-Literasi-2026.xlsx`
-- `RAB-Sosialisasi-PDP-2026.xlsx`
+**4 RAB** — Rencana Anggaran Biaya (**PDF** format RKA-K/L: komponen → akun → rincian)
+- `RAB-App-PDP-2026.pdf`
+- `RAB-Survei-Literasi-2026.pdf`
+- `RAB-Sosialisasi-PDP-2026.pdf`
+- `RAB-PDN-Tahap-2-2026.pdf`
+
+> ⚠️ TOR/RAB RKA-K/L **harus PDF** — digest V6 (`digest_tor.py`/`digest_rab.py`) hanya
+> membaca PDF berformat kertas-kerja RKA-K/L. Tiap TOR berpasangan 1:1 dengan RAB
+> ber-slug sama (App↔App, Survei↔Survei, dst) agar auto-pair bridge benar.
+> Setiap TOR sengaja memuat 1 dasar hukum tanpa pasal (anomali D.1) dan tanpa
+> matriks Manajemen Risiko lengkap (anomali D.5) sebagai bahan uji.
 
 ### Dokumen Umum
 
@@ -78,7 +85,15 @@ Generated otomatis — semua konten fiktif, tidak terkait dengan transaksi nyata
 
 ### Skenario 2: Test Reviu RKA-K/L
 
-Pakai `ST-78`, `KP-203`, `PKP-Reviu-RKA-...`, plus 1-2 TOR + RAB yang sesuai.
+1. Buat penugasan baru dengan skill **Reviu RKA-K/L**, obyek "Reviu RKA-K/L DIT Pengendalian"
+2. Upload ke tab Dokumen:
+   - `ST-78-...pdf` (ST), `KP-203-...pdf` (KP), `PKP-Reviu-RKA-...pdf` (PKP)
+   - 1+ pasang TOR + RAB ber-slug sama, mis. `TOR-App-PDP-2026.pdf` + `RAB-App-PDP-2026.pdf`
+3. Ingestion auto-trigger, tunggu status `READY`
+4. Edit `context.md` + set sasaran S-RKA-01..03 assigned ke "Sarah Aulia"
+5. Tab **Chat AT** → jalankan agen → pipeline V6 stage TOR/RAB ke `input/objek/{TOR,RAB}` lalu digest+cross-check
+6. Expected temuan: D.1 dasar hukum tanpa pasal, D.5 matriks MR belum lengkap,
+   D.4 KPI tanpa formula operasional, + anomali cross-RO lain
 
 ## Catatan
 

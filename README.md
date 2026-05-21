@@ -317,9 +317,10 @@ Agen KT Mode B akan:
 ### 1. Reviu RKA-K/L
 
 - Orchestrator V6: `backend/v6/scripts/reviu-rka-kl/run_batch.py`
-- 39 rules deterministic
-- Input: TOR (PDF) + RAB (PDF/Excel) per RO
-- Data uji: lihat folder `audit-system-v4/penugasan/DIT. PENGENDALIAN/` (eksternal)
+- 21 rules deterministic (digest TOR + digest RAB → cross-check single + cross-RO)
+- Input: **TOR (PDF) + RAB (PDF)** per RO — keduanya wajib PDF format kertas-kerja RKA-K/L. `digest_rab.py` tidak membaca Excel.
+- ✅ **Sudah di-test E2E.** `run_batch_rka` otomatis stage TOR/RAB dari `03-perencanaan/` ke `input/objek/{TOR,RAB}/[N] nama.pdf` (pair by urutan nama) sebelum jalankan pipeline V6. Lihat `_stage_rka_inputs` di `backend/app/tools/pipeline_tools.py`.
+- Data uji: `dummy-test-docs/` (4 pasang TOR↔RAB format RKA-K/L, regenerate via `_generator.py`). TOR sengaja memuat anomali uji (D.1 dasar hukum tanpa pasal, D.5 MR tak lengkap, D.4 KPI tanpa formula).
 
 ### 2. Reviu Pengadaan
 
@@ -547,10 +548,10 @@ Plus jebakan minor:
 
 ### Tier 2 — UX & robustness
 
-- [ ] **Fix hydration warning di dashboard.** Console menampilkan "Expected server HTML to contain a matching `<main>` in `<body>`". Tidak blocking tapi noise.
-- [ ] **Streaming response agen (SSE) bukan polling.** Route `/agen/{name}/stream` ada tapi UI masih pakai sync POST.
+- [x] **Fix hydration warning di dashboard.** ✅ done — pattern `mounted` state di `/penugasan` + `/penugasan/[id]` + `/feedback` supaya `getSession()` tidak di-call saat SSR. Server-render hanya kembalikan shell `<main>` kosong, session di-baca dari localStorage setelah mount.
+- [x] **Streaming response agen (SSE) bukan polling.** ✅ done — ChatTab pakai `EventSource` ke `/agen/{name}/stream`, text + tool_use di-stream real-time, run di-persist ke DB oleh backend, history reload otomatis saat event `done`. Tombol Stop tersedia untuk cancel.
+- [x] **Dashboard feedback aggregate (Feedback Phase 2).** ✅ done — backend `GET /feedback/aggregate?days=N` + `GET /feedback/list?days=N` scan semua `_FEEDBACK-AGEN/*.json` cross-penugasan. Frontend `/feedback` dashboard render: KPI total + by_confidence, by_agent, severity heatmap, top 5 workflow/substansi/pattern issues, recent files dengan drill-down link.
 - [ ] **Validation: prevent run kalau sasaran-assignment.json kosong.** Saat ini agen "lapor & berhenti" — bagus, tapi UI tidak kasih indikator visual.
-- [ ] **Dashboard feedback aggregate (Feedback Phase 2).** Scan semua `_FEEDBACK-AGEN/*.json` cross-penugasan → tampilkan top workflow issues + top pattern suggestions + severity heatmap. Format: dedicated route `/feedback` di frontend.
 - [ ] **Notification antar role** saat handover (PT buat penugasan → KT dapat notif; KT setup done → AT dapat notif; AT KKP done → KT dapat notif untuk approve).
 
 ### Tier 3 — deployment & ops

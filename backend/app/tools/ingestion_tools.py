@@ -88,7 +88,7 @@ async def digest_tor(args: dict) -> dict:
 
 @tool(
     "digest_rab",
-    "Ekstrak RAB (PDF/Excel) ke JSON dengan script V6 scripts/reviu-rka-kl/digest_rab.py.",
+    "Ekstrak RAB (PDF format kertas-kerja RKA-K/L) ke JSON dengan script V6 scripts/reviu-rka-kl/digest_rab.py. Hanya menerima PDF, bukan Excel.",
     {"penugasan_kode": str, "file_path": str, "output_path": str},
 )
 async def digest_rab(args: dict) -> dict:

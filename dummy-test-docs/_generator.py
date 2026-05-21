@@ -13,12 +13,13 @@ from reportlab.lib.units import cm
 from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY
 from reportlab.lib import colors
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, Preformatted
 )
 from openpyxl import Workbook
 from openpyxl.styles import Font, Alignment, PatternFill, Border, Side
 
-OUT = Path("/sessions/trusting-blissful-heisenberg/mnt/sistem audit v7/dummy-test-docs")
+# Output ke folder skrip ini (portabel antar mesin).
+OUT = Path(__file__).resolve().parent
 OUT.mkdir(parents=True, exist_ok=True)
 
 # Styles
@@ -27,9 +28,16 @@ H1 = ParagraphStyle("H1", parent=styles["Heading1"], fontSize=14, alignment=TA_C
 H2 = ParagraphStyle("H2", parent=styles["Heading2"], fontSize=11, spaceAfter=8, fontName="Helvetica-Bold")
 P = ParagraphStyle("Body", parent=styles["Normal"], fontSize=10, alignment=TA_JUSTIFY, spaceAfter=6, leading=14)
 PCenter = ParagraphStyle("BodyC", parent=P, alignment=TA_CENTER)
+# Monospace: pertahankan newline + layout kolom agar digest_tor/digest_rab V6
+# (yang parse teks per-baris dari pdftotext/pdfplumber) dapat membacanya.
+MONO = ParagraphStyle("MONO", parent=styles["Code"], fontSize=9, leading=12)
 
 def rp(n: int) -> str:
     return f"Rp {n:,.0f}".replace(",", ".")
+
+def commafmt(n: int) -> str:
+    # Format ribuan dengan koma (1,960,000,000) — wajib untuk regex komponen/akun V6.
+    return f"{n:,}"
 
 def build_pdf(filename: str, flowables: list):
     path = OUT / filename
@@ -327,75 +335,76 @@ def make_kontrak(no: str, nama_obyek: str, ta: int, vendor: str, nilai: int, jan
 # REVIU RKA-K/L: TOR
 # ============================================================
 
-def make_tor(kegiatan: str, ta: int, output: str, target: str, nilai: int, filename: str):
+def make_tor(kegiatan: str, ta: int, ro_nama: str, volume: str, satuan: str,
+             nilai: int, filename: str, *,
+             eselon: str = "Direktorat Jenderal Ekosistem Digital",
+             program: str = "Penyelenggaraan Ekosistem Digital",
+             ikp: str = "Persentase Tingkat Produktivitas Adopsi Teknologi Baru",
+             kro_kode: str = "QDC", kegiatan_kode: str = "5241",
+             program_kode: str = "059.GG"):
+    """TOR format kertas-kerja RKA-K/L yang dikenali parser V6 (digest_tor.py).
+
+    Identitas RO pakai label baku (Kementerian Negara/Lembaga, Program, Rincian
+    Output, Volume RO, dst) dalam blok monospace agar tiap field di baris sendiri.
+    Sengaja menyisakan 1 dasar hukum tanpa pasal (memicu rule D.1) dan tanpa
+    matriks Manajemen Risiko lengkap (memicu rule D.5) — sebagai anomali uji.
+    """
+    identitas = (
+        f"Kementerian Negara/Lembaga: Komunikasi dan Digital\n"
+        f"Unit Eselon I: {eselon}\n"
+        f"Program {program_kode} {program}\n"
+        f"Program: {program}\n"
+        f"Sasaran Program: Meningkatnya adopsi teknologi digital nasional\n"
+        f"Indikator Kinerja Program: {ikp}\n"
+        f"Kegiatan {kegiatan_kode} {kegiatan}\n"
+        f"Kegiatan: {kegiatan}\n"
+        f"Sasaran Kegiatan: Terlaksananya {kegiatan.lower()}\n"
+        f"Klasifikasi Rincian Output: {kro_kode} Layanan\n"
+        f"Rincian Output: {ro_nama}\n"
+        f"Indikator RO: Tingkat pemanfaatan {ro_nama.lower()}\n"
+        f"Volume RO: {volume}\n"
+        f"Satuan Ukur Keluaran: {satuan}\n"
+        f"KETERANGAN"
+    )
     flow = [
-        Paragraph(f"TERM OF REFERENCE (TOR)", H1),
-        Paragraph(f"KEGIATAN {kegiatan.upper()}", H1),
+        Paragraph("KERANGKA ACUAN KERJA (TOR) RKA-K/L", H1),
         Paragraph(f"TAHUN ANGGARAN {ta}", PCenter),
-        Spacer(1, 0.5*cm),
-
-        Paragraph("1. LATAR BELAKANG", H2),
-        Paragraph(
-            f"Kegiatan {kegiatan} merupakan salah satu agenda prioritas Kementerian Komunikasi "
-            f"dan Digital tahun {ta}. Dalam rangka mencapai sasaran tersebut, diperlukan "
-            f"alokasi anggaran yang memadai dan mekanisme pelaksanaan yang akuntabel.", P),
-
-        Paragraph("2. DASAR HUKUM", H2),
-        Paragraph(
-            "a. UU 25/2009 tentang Pelayanan Publik;<br/>"
-            "b. PP 71/2019 tentang Penyelenggaraan Sistem dan Transaksi Elektronik;<br/>"
-            f"c. Perpres tentang APBN TA {ta};<br/>"
-            f"d. PMK 107/2024 tentang Petunjuk Penyusunan dan Penelaahan RKA-K/L.", P),
-
-        Paragraph("3. MAKSUD DAN TUJUAN", H2),
-        Paragraph(
-            f"Maksud: terlaksananya kegiatan {kegiatan} secara efektif dan efisien. "
-            f"Tujuan: tercapainya output dan outcome sesuai indikator kinerja yang ditetapkan.", P),
-
-        Paragraph("4. SASARAN, OUTPUT, DAN INDIKATOR", H2),
-        std_table([
-            ["Aspek", "Uraian"],
-            ["Sasaran", f"Meningkatnya kapasitas operasional untuk {kegiatan.lower()}"],
-            ["Output", output],
-            ["Target", target],
-            ["Indikator Kinerja", "Persentase capaian output ≥ 95%"],
-        ], col_widths=[4*cm, 12*cm]),
+        Spacer(1, 0.3*cm),
+        Preformatted(identitas, MONO),
         Spacer(1, 0.3*cm),
 
-        Paragraph("5. RUANG LINGKUP", H2),
+        Paragraph("A. LATAR BELAKANG", H2),
         Paragraph(
-            "Lingkup kegiatan meliputi: (a) persiapan dan koordinasi; (b) pelaksanaan kegiatan inti; "
-            "(c) monitoring & evaluasi; (d) pelaporan dan diseminasi hasil.", P),
+            f"Kegiatan {kegiatan} merupakan salah satu agenda prioritas Kementerian "
+            f"Komunikasi dan Digital tahun {ta} untuk mendukung transformasi digital nasional.", P),
+        Paragraph("1. Dasar Hukum", H2),
+        # butir a & c memuat pasal; butir b TIDAK (memicu rule D.1 dasar hukum tanpa pasal)
+        Preformatted(
+            "a. Undang-Undang Nomor 27 Tahun 2022 tentang Pelindungan Data Pribadi, Pasal 5 ayat (1);\n"
+            "b. Peraturan Menteri Komdigi Nomor 3 Tahun 2024 tentang Tata Kelola Aplikasi;\n"
+            "c. Peraturan Menteri Keuangan Nomor 107 Tahun 2024 tentang Penyusunan RKA-K/L, Pasal 61;",
+            MONO),
+        Paragraph("2. Gambaran Umum", H2),
+        Paragraph(
+            f"{ro_nama} dibutuhkan untuk meningkatkan kapasitas operasional Kementerian "
+            f"dalam menyelenggarakan layanan publik digital yang akuntabel.", P),
 
-        Paragraph("6. STRATEGI PELAKSANAAN", H2),
-        Paragraph(
-            "Kegiatan dilaksanakan dengan pendekatan kolaboratif lintas unit kerja. "
-            "Penanggung jawab utama: Eselon II terkait. Tim pelaksana terdiri atas auditor, "
-            "analis kebijakan, dan staf teknis.", P),
+        Paragraph("B. Lokasi", H2),
+        Paragraph("Kab. Bogor (Jawa Barat), Kab. Sleman (DI Yogyakarta).", P),
 
         PageBreak(),
+        Paragraph("D. KEY PERFORMANCE INDIKATOR (KPI)", H2),
+        # sengaja TANPA formula operasional/bobot (memicu rule D.4 KPI belum operasional)
+        Paragraph(
+            f"Indikator Kinerja Program (Eselon I): {ikp}. Target 10%. "
+            f"Pengukuran dilakukan secara tahunan oleh unit Eselon I.", P),
 
-        Paragraph("7. ANGGARAN", H2),
-        Paragraph(f"Pagu anggaran kegiatan ini: <b>{rp(nilai)}</b>", P),
-        Spacer(1, 0.2*cm),
-        std_table([
-            ["Akun", "Uraian", "Jumlah"],
-            ["521211", "Belanja Bahan", rp(int(nilai*0.10))],
-            ["521213", "Honorarium Output Kegiatan", rp(int(nilai*0.20))],
-            ["521219", "Belanja Barang Non Operasional Lainnya", rp(int(nilai*0.15))],
-            ["524111", "Belanja Perjalanan Biasa", rp(int(nilai*0.40))],
-            ["522151", "Belanja Jasa Profesi", rp(int(nilai*0.15))],
-            ["", "TOTAL", rp(nilai)],
-        ], col_widths=[2.5*cm, 10*cm, 3.5*cm]),
-        Spacer(1, 0.3*cm),
+        Paragraph("F. BIAYA YANG DIPERLUKAN", H2),
+        Paragraph(
+            f"Kegiatan ini memerlukan biaya sebesar Rp {commafmt(nilai)} "
+            f"yang bersumber dari DIPA {eselon} Tahun Anggaran {ta}.", P),
+        # sengaja TIDAK memuat bagian H. MANAJEMEN RISIKO lengkap (memicu rule D.5)
 
-        Paragraph("8. JADWAL", H2),
-        std_table([
-            ["Tahap", "Bulan"],
-            ["Persiapan", "Januari - Februari"],
-            ["Pelaksanaan", "Maret - Oktober"],
-            ["Pelaporan", "November - Desember"],
-        ], col_widths=[10*cm, 6*cm]),
         Spacer(1, 1*cm),
         Paragraph(f"Jakarta, 5 Januari {ta}", PCenter),
         Paragraph("Penanggung Jawab Kegiatan", PCenter),
@@ -410,65 +419,56 @@ def make_tor(kegiatan: str, ta: int, output: str, target: str, nilai: int, filen
 # REVIU RKA-K/L: RAB (Excel)
 # ============================================================
 
-def make_rab(kegiatan: str, ta: int, items: list, filename: str):
-    wb = Workbook()
-    ws = wb.active
-    ws.title = "RAB"
+def make_rab(kegiatan: str, ta: int, ro_nama: str, komponen: list, filename: str, *,
+             eselon: str = "Direktorat Jenderal Ekosistem Digital",
+             program: str = "Penyelenggaraan Ekosistem Digital",
+             volume: str = "1", satuan: str = "Layanan"):
+    """RAB format kertas-kerja RKA-K/L PDF yang dikenali parser V6 (digest_rab.py).
 
-    # Header
-    ws["A1"] = f"RENCANA ANGGARAN BIAYA (RAB)"
-    ws["A1"].font = Font(size=14, bold=True)
-    ws.merge_cells("A1:F1")
-    ws["A1"].alignment = Alignment(horizontal="center")
+    `komponen` = list of (kode_komponen, nama_komponen, [(kode_akun, nama_akun, [(desc, vol, satuan, harga)])]).
+    Struktur teks: header komponen `NNNN.XXX.NNN.NNN nama  TOTAL`, akun
+    `NNNNNN BELANJA ... TOTAL`, lalu rincian `desc vol SATUAN harga total`.
+    Total dalam format koma (1,960,000,000) — wajib untuk regex V6.
+    """
+    total_pagu = sum(
+        sum(d[1] * d[3] for d in akun[2]) for komp in komponen for akun in komp[2]
+    )
+    identitas = (
+        f"Kementerian Negara/Lembaga : Komunikasi dan Digital\n"
+        f"Unit Eselon I/II : {eselon}\n"
+        f"Program : {program}\n"
+        f"Kegiatan : {kegiatan}\n"
+        f"Rincian Output : {ro_nama}\n"
+        f"Volume : {volume}\n"
+        f"Satuan Ukur : {satuan}\n"
+        f"Alokasi Dana : Rp {commafmt(total_pagu)}"
+    )
+    lines: list[str] = []
+    for kode_komp, nama_komp, akun_list in komponen:
+        komp_total = sum(d[1] * d[3] for akun in akun_list for d in akun[2])
+        lines.append(f"{kode_komp} {nama_komp}".ljust(56) + commafmt(komp_total))
+        for kode_akun, nama_akun, rincian in akun_list:
+            akun_total = sum(d[1] * d[3] for d in rincian)
+            lines.append(f"{kode_akun} {nama_akun}".ljust(56) + commafmt(akun_total))
+            for desc, vol, sat, harga in rincian:
+                total = vol * harga
+                lines.append(
+                    f"{desc}".ljust(36)
+                    + f"{vol} {sat}".ljust(10)
+                    + commafmt(harga).rjust(15)
+                    + commafmt(total).rjust(18)
+                )
+    tabel = "\n".join(lines)
 
-    ws["A2"] = f"Kegiatan: {kegiatan}"
-    ws["A2"].font = Font(size=11, bold=True)
-    ws.merge_cells("A2:F2")
-
-    ws["A3"] = f"Tahun Anggaran: {ta}"
-    ws.merge_cells("A3:F3")
-
-    # Table header
-    headers = ["No", "Akun", "Uraian", "Vol", "Harga Satuan", "Jumlah"]
-    for col, h in enumerate(headers, 1):
-        cell = ws.cell(row=5, column=col, value=h)
-        cell.font = Font(bold=True)
-        cell.fill = PatternFill("solid", fgColor="D9D9D9")
-        cell.alignment = Alignment(horizontal="center")
-        cell.border = Border(
-            left=Side(style="thin"), right=Side(style="thin"),
-            top=Side(style="thin"), bottom=Side(style="thin"),
-        )
-
-    # Data rows
-    total = 0
-    for i, (akun, uraian, vol, harga) in enumerate(items, 1):
-        row = i + 5
-        jumlah = vol * harga
-        total += jumlah
-        for col, val in enumerate([str(i), akun, uraian, vol, harga, jumlah], 1):
-            cell = ws.cell(row=row, column=col, value=val)
-            cell.border = Border(
-                left=Side(style="thin"), right=Side(style="thin"),
-                top=Side(style="thin"), bottom=Side(style="thin"),
-            )
-            if col in (5, 6):
-                cell.number_format = '"Rp"#,##0;[Red]"-Rp"#,##0'
-
-    # Total row
-    total_row = len(items) + 6
-    ws.cell(row=total_row, column=5, value="TOTAL").font = Font(bold=True)
-    ws.cell(row=total_row, column=6, value=total).font = Font(bold=True)
-    ws.cell(row=total_row, column=6).number_format = '"Rp"#,##0;[Red]"-Rp"#,##0'
-
-    # Column widths
-    widths = [4, 10, 50, 8, 18, 18]
-    for col, w in enumerate(widths, 1):
-        ws.column_dimensions[chr(64+col)].width = w
-
-    path = OUT / filename
-    wb.save(str(path))
-    print(f"  ✓ {filename} ({path.stat().st_size:,} bytes)")
+    flow = [
+        Paragraph("RENCANA ANGGARAN BIAYA (RAB) RKA-K/L", H1),
+        Paragraph(f"TAHUN ANGGARAN {ta}", PCenter),
+        Spacer(1, 0.3*cm),
+        Preformatted(identitas, MONO),
+        Spacer(1, 0.3*cm),
+        Preformatted(tabel, MONO),
+    ]
+    build_pdf(filename, flow)
 
 
 # ============================================================
@@ -682,52 +682,88 @@ make_kontrak("HK.02.04/DC/06/2026", "Data Center & DRC Tier-3", 2026,
              "PT DCI Indonesia", 8_200_000_000, "24 bulan",
              "KONTRAK-DataCenter-DCI-2026.pdf")
 
-print("\n[5] TOR (Term of Reference) — 4 file")
-make_tor("Pengembangan Aplikasi Pemantauan Perlindungan Data Pribadi", 2026,
-         "Aplikasi web monitoring kepatuhan UU PDP",
-         "1 aplikasi siap operasi di Q4 2026",
+print("\n[5] TOR (Term of Reference) — 4 file (format RKA-K/L)")
+make_tor("Pengembangan Aplikasi Pemantauan PDP", 2026,
+         "Aplikasi Pemantauan Perlindungan Data Pribadi", "1 Aplikasi", "Aplikasi",
          2_450_000_000, "TOR-App-PDP-2026.pdf")
 make_tor("Survei Indeks Literasi Digital Nasional", 2026,
-         "Laporan survei nasional dengan 34 provinsi",
-         "Coverage minimum 5.000 responden",
-         3_200_000_000, "TOR-Survei-Literasi-Digital-2026.pdf")
+         "Laporan Survei Indeks Literasi Digital 34 Provinsi", "1 Laporan", "Laporan",
+         3_200_000_000, "TOR-Survei-Literasi-2026.pdf")
 make_tor("Sosialisasi UU 27/2022 tentang PDP", 2026,
-         "Materi & event sosialisasi di 10 kota",
-         "10 event dengan minimum 200 peserta/event",
+         "Penyelenggaraan Sosialisasi UU PDP di 10 Kota", "10 Kegiatan", "Kegiatan",
          1_800_000_000, "TOR-Sosialisasi-PDP-2026.pdf")
 make_tor("Pengembangan Pusat Data Nasional Tahap II", 2026,
-         "Infrastruktur PDN ekspansi 2x kapasitas",
-         "Go-live Desember 2026",
-         15_000_000_000, "TOR-PDN-Tahap-2-2026.pdf")
+         "Infrastruktur Pusat Data Nasional Ekspansi Tahap II", "1 Sistem", "Sistem",
+         15_000_000_000, "TOR-PDN-Tahap-2-2026.pdf",
+         eselon="Direktorat Jenderal Infrastruktur Digital",
+         kegiatan_kode="5102", program_kode="059.GH")
 
-print("\n[6] RAB (Excel) — 3 file")
+print("\n[6] RAB (PDF format RKA-K/L) — 4 file")
 make_rab("Pengembangan Aplikasi Pemantauan PDP", 2026,
-    items=[
-        ("521211", "Belanja Bahan", 1, 50_000_000),
-        ("521213", "Honorarium Output Kegiatan", 1, 350_000_000),
-        ("521219", "Belanja Barang Non-Operasional Lainnya", 1, 100_000_000),
-        ("522151", "Belanja Jasa Profesi (konsultan)", 1, 800_000_000),
-        ("522191", "Belanja Jasa Lainnya (pengembangan)", 1, 950_000_000),
-        ("524111", "Belanja Perjalanan Biasa", 1, 200_000_000),
+    "Aplikasi Pemantauan Perlindungan Data Pribadi",
+    komponen=[
+        ("5241.QDC.001.051", "Persiapan dan Koordinasi", [
+            ("521211", "BELANJA BAHAN", [
+                ("Penggandaan dokumen teknis", 10, "PKT", 5_000_000),
+                ("Konsumsi rapat koordinasi", 30, "OK", 5_000_000),
+            ]),
+            ("521213", "BELANJA HONOR OUTPUT KEGIATAN", [
+                ("Honorarium tim pengembang", 10, "OB", 29_000_000),
+            ]),
+        ]),
+        ("5241.QDC.001.052", "Pengembangan Aplikasi", [
+            ("522151", "BELANJA JASA PROFESI", [
+                ("Jasa pengembangan aplikasi", 1, "PKT", 1_960_000_000),
+            ]),
+        ]),
     ],
-    filename="RAB-App-PDP-2026.xlsx")
+    filename="RAB-App-PDP-2026.pdf")
 make_rab("Survei Indeks Literasi Digital Nasional", 2026,
-    items=[
-        ("521211", "Belanja Bahan kuesioner & alat", 1, 80_000_000),
-        ("521213", "Honor enumerator (34 provinsi)", 34, 25_000_000),
-        ("521219", "Belanja sosialisasi & FGD", 1, 220_000_000),
-        ("524111", "Belanja Perjalanan Dinas Dalam Negeri", 1, 1_150_000_000),
-        ("522151", "Belanja Jasa Profesi (akademisi)", 1, 500_000_000),
+    "Laporan Survei Indeks Literasi Digital 34 Provinsi",
+    komponen=[
+        ("5241.QDC.002.051", "Pengumpulan Data Survei", [
+            ("521211", "BELANJA BAHAN", [
+                ("Kuesioner & alat survei", 1, "PKT", 80_000_000),
+            ]),
+            ("521213", "BELANJA HONOR OUTPUT KEGIATAN", [
+                ("Honor enumerator 34 provinsi", 34, "OB", 25_000_000),
+            ]),
+            ("524111", "BELANJA PERJALANAN BIASA", [
+                ("Perjalanan dinas pengumpulan data", 34, "OK", 38_000_000),
+            ]),
+        ]),
     ],
-    filename="RAB-Survei-Literasi-2026.xlsx")
-make_rab("Sosialisasi UU PDP", 2026,
-    items=[
-        ("521211", "Belanja Bahan (materi cetak, banner)", 1, 150_000_000),
-        ("521213", "Honor narasumber & moderator", 10, 30_000_000),
-        ("521219", "Belanja Konsumsi & ATK event", 10, 60_000_000),
-        ("524111", "Belanja Perjalanan ke 10 kota", 1, 750_000_000),
+    filename="RAB-Survei-Literasi-2026.pdf")
+make_rab("Sosialisasi UU 27/2022 tentang PDP", 2026,
+    "Penyelenggaraan Sosialisasi UU PDP di 10 Kota",
+    komponen=[
+        ("5241.QDC.003.051", "Penyelenggaraan Event Sosialisasi", [
+            ("521211", "BELANJA BAHAN", [
+                ("Materi cetak & banner", 1, "PKT", 150_000_000),
+            ]),
+            ("521213", "BELANJA HONOR OUTPUT KEGIATAN", [
+                ("Honor narasumber & moderator", 10, "OK", 30_000_000),
+            ]),
+            ("524111", "BELANJA PERJALANAN BIASA", [
+                ("Perjalanan tim ke 10 kota", 10, "OK", 75_000_000),
+            ]),
+        ]),
     ],
-    filename="RAB-Sosialisasi-PDP-2026.xlsx")
+    filename="RAB-Sosialisasi-PDP-2026.pdf")
+make_rab("Pengembangan Pusat Data Nasional Tahap II", 2026,
+    "Infrastruktur Pusat Data Nasional Ekspansi Tahap II",
+    komponen=[
+        ("5102.QDC.001.051", "Pengadaan Infrastruktur PDN", [
+            ("532111", "BELANJA MODAL PERALATAN DAN MESIN", [
+                ("Pengadaan server & storage", 1, "PKT", 12_000_000_000),
+            ]),
+            ("522151", "BELANJA JASA PROFESI", [
+                ("Jasa integrasi sistem", 1, "PKT", 3_000_000_000),
+            ]),
+        ]),
+    ],
+    filename="RAB-PDN-Tahap-2-2026.pdf",
+    eselon="Direktorat Jenderal Infrastruktur Digital")
 
 print("\n[7] Surat Tugas (ST) — 2 file")
 make_st("51/IJ.3/KP.01.06/03/2026",
@@ -820,16 +856,23 @@ Generated otomatis — semua konten fiktif, tidak terkait dengan transaksi nyata
 
 ### Reviu RKA-K/L (skill: `reviu-rka-kl`)
 
-**4 TOR** — Term of Reference (struktur lengkap 7-8 blok)
+**4 TOR** — Term of Reference (format kertas-kerja RKA-K/L: identitas RO + dasar hukum + KPI + biaya)
 - `TOR-App-PDP-2026.pdf` — Rp 2,45 M
-- `TOR-Survei-Literasi-Digital-2026.pdf` — Rp 3,2 M
+- `TOR-Survei-Literasi-2026.pdf` — Rp 3,2 M
 - `TOR-Sosialisasi-PDP-2026.pdf` — Rp 1,8 M
 - `TOR-PDN-Tahap-2-2026.pdf` — Rp 15 M
 
-**3 RAB** — Rencana Anggaran Biaya (Excel, tabel akun)
-- `RAB-App-PDP-2026.xlsx`
-- `RAB-Survei-Literasi-2026.xlsx`
-- `RAB-Sosialisasi-PDP-2026.xlsx`
+**4 RAB** — Rencana Anggaran Biaya (**PDF** format RKA-K/L: komponen → akun → rincian)
+- `RAB-App-PDP-2026.pdf`
+- `RAB-Survei-Literasi-2026.pdf`
+- `RAB-Sosialisasi-PDP-2026.pdf`
+- `RAB-PDN-Tahap-2-2026.pdf`
+
+> ⚠️ TOR/RAB RKA-K/L **harus PDF** — digest V6 (`digest_tor.py`/`digest_rab.py`) hanya
+> membaca PDF berformat kertas-kerja RKA-K/L. Tiap TOR berpasangan 1:1 dengan RAB
+> ber-slug sama (App↔App, Survei↔Survei, dst) agar auto-pair bridge benar.
+> Setiap TOR sengaja memuat 1 dasar hukum tanpa pasal (anomali D.1) dan tanpa
+> matriks Manajemen Risiko lengkap (anomali D.5) sebagai bahan uji.
 
 ### Dokumen Umum
 
@@ -865,7 +908,15 @@ Generated otomatis — semua konten fiktif, tidak terkait dengan transaksi nyata
 
 ### Skenario 2: Test Reviu RKA-K/L
 
-Pakai `ST-78`, `KP-203`, `PKP-Reviu-RKA-...`, plus 1-2 TOR + RAB yang sesuai.
+1. Buat penugasan baru dengan skill **Reviu RKA-K/L**, obyek "Reviu RKA-K/L DIT Pengendalian"
+2. Upload ke tab Dokumen:
+   - `ST-78-...pdf` (ST), `KP-203-...pdf` (KP), `PKP-Reviu-RKA-...pdf` (PKP)
+   - 1+ pasang TOR + RAB ber-slug sama, mis. `TOR-App-PDP-2026.pdf` + `RAB-App-PDP-2026.pdf`
+3. Ingestion auto-trigger, tunggu status `READY`
+4. Edit `context.md` + set sasaran S-RKA-01..03 assigned ke "Sarah Aulia"
+5. Tab **Chat AT** → jalankan agen → pipeline V6 stage TOR/RAB ke `input/objek/{TOR,RAB}` lalu digest+cross-check
+6. Expected temuan: D.1 dasar hukum tanpa pasal, D.5 matriks MR belum lengkap,
+   D.4 KPI tanpa formula operasional, + anomali cross-RO lain
 
 ## Catatan
 
