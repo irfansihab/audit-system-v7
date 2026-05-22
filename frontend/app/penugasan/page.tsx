@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { api, getSession, clearToken, Penugasan, Skill } from '@/lib/api';
+import { api, getSession, clearToken, Penugasan, Session, Skill } from '@/lib/api';
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -14,10 +14,16 @@ export default function DashboardPage() {
   const [nomorSt, setNomorSt] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const session = getSession();
+  // Hydration-safe: session di-baca dari localStorage HANYA setelah mount.
+  // Awalnya null di server-render dan first client-render, lalu di-set di useEffect.
+  const [session, setSessionState] = useState<Session | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!session) {
+    setMounted(true);
+    const s = getSession();
+    setSessionState(s);
+    if (!s) {
       router.push('/login');
       return;
     }
@@ -50,6 +56,11 @@ export default function DashboardPage() {
     router.push('/login');
   };
 
+  // SSR + first paint: render shell kosong (atau null) supaya HTML server === HTML
+  // client. Setelah mount, session di-load dari localStorage.
+  if (!mounted) {
+    return <main className="min-h-screen" />;
+  }
   if (!session) return null;
 
   return (
@@ -78,18 +89,27 @@ export default function DashboardPage() {
       <div className="max-w-6xl mx-auto p-6">
         <div className="flex justify-between items-center mb-5">
           <h1 className="text-2xl font-bold text-primary-dark">Penugasan Saya</h1>
-          {session?.role_aktif === 'PT' ? (
-            <button
-              onClick={() => setShowForm(!showForm)}
-              className="px-4 py-2 rounded bg-primary text-white text-sm font-semibold hover:bg-primary-dark"
+          <div className="flex items-center gap-3">
+            <Link
+              href="/feedback"
+              className="px-3 py-2 text-sm border border-gray-300 rounded hover:bg-gray-50 text-gray-700"
+              title="Dashboard agregat feedback agen cross-penugasan"
             >
-              {showForm ? '× Batal' : '+ Penugasan Baru'}
-            </button>
-          ) : (
-            <span className="text-xs text-gray-400 italic">
-              🔒 Hanya Pengendali Teknis yang dapat membuat penugasan
-            </span>
-          )}
+              📊 Feedback Agen
+            </Link>
+            {session?.role_aktif === 'PT' ? (
+              <button
+                onClick={() => setShowForm(!showForm)}
+                className="px-4 py-2 rounded bg-primary text-white text-sm font-semibold hover:bg-primary-dark"
+              >
+                {showForm ? '× Batal' : '+ Penugasan Baru'}
+              </button>
+            ) : (
+              <span className="text-xs text-gray-400 italic">
+                🔒 Hanya Pengendali Teknis yang dapat membuat penugasan
+              </span>
+            )}
+          </div>
         </div>
 
         {error && (

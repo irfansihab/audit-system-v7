@@ -41,6 +41,7 @@ from datetime import datetime
 from pathlib import Path
 
 from claude_agent_sdk import tool
+from sqlalchemy import select
 
 from app.tools.v6_bridge import run_v6_script, safe_read_json
 
@@ -274,4 +275,138 @@ async def run_qc_kkp(args: dict) -> dict:
     }
 
 
-KKP_TOOLS = [read_context, list_ingested, append_temuan, render_kkp_docx, run_qc_kkp]
+# =============================================================================
+# CONTEXT GENERATION — AI susun context.md dari digest + sasaran (Step 0 AT)
+# =============================================================================
+
+
+def _summarize_digest(name: str, data: dict) -> dict:
+    """Ambil field kunci dari satu file digest untuk bahan context.md."""
+    out: dict = {"file": name}
+    if not isinstance(data, dict):
+        return out
+    # TOR (digest_tor): identitas_ro + biaya + dasar_hukum
+    idr = data.get("identitas_ro")
+    if isinstance(idr, dict):
+        out["jenis"] = "TOR"
+        for k in ("kementerian", "unit_eselon_i", "program_nama", "kegiatan_nama",
+                  "ro", "volume", "satuan"):
+            if idr.get(k):
+                out[k] = idr[k]
+        biaya = data.get("biaya")
+        if isinstance(biaya, dict) and biaya.get("total"):
+            out["total_biaya"] = biaya["total"]
+            if biaya.get("sumber_dana"):
+                out["sumber_dana"] = biaya["sumber_dana"]
+        dh = data.get("dasar_hukum")
+        if isinstance(dh, list):
+            out["dasar_hukum"] = [
+                f"{d.get('jenis_regulasi') or ''} {d.get('nomor') or ''}/{d.get('tahun') or ''}".strip()
+                for d in dh[:8]
+            ]
+    # RAB (digest_rab): identitas (alokasi_dana) + komponen
+    elif data.get("komponen") is not None or (isinstance(data.get("identitas"), dict)):
+        out["jenis"] = "RAB"
+        ident = data.get("identitas") or data.get("identitas_ro") or {}
+        if isinstance(ident, dict):
+            for k in ("alokasi_dana", "program", "kegiatan", "ro"):
+                if ident.get(k):
+                    out[k] = ident[k]
+        komp = data.get("komponen")
+        if isinstance(komp, list):
+            out["jumlah_komponen"] = len(komp)
+    # Pengadaan digest (KAK/HPS/RFI/Kontrak): ambil top-level keys ringkas
+    else:
+        out["jenis"] = "PENGADAAN"
+        for k in ("obyek", "nilai_hps", "metode_pemilihan", "jangka_waktu", "sla"):
+            if data.get(k):
+                out[k] = data[k]
+    return out
+
+
+@tool(
+    "read_ingested_digest",
+    "Baca RINGKASAN isi hasil ingestion (_INGESTED/*.json) — field kunci seperti "
+    "kementerian, program, kegiatan, RO, volume, total biaya, dasar hukum, jumlah "
+    "komponen RAB. Dipakai untuk menyusun context.md. Return JSON ringkas (di-cap).",
+    {"penugasan_folder": str},
+)
+async def read_ingested_digest(args: dict) -> dict:
+    folder = Path(args["penugasan_folder"]) / "_INGESTED"
+    items: list[dict] = []
+    if folder.exists():
+        for p in sorted(folder.glob("*.json")):
+            data = safe_read_json(p)
+            items.append(_summarize_digest(p.name, data))
+    text = json.dumps({"total": len(items), "digest": items}, ensure_ascii=False)
+    return {"content": [{"type": "text", "text": text[:8000]}]}
+
+
+@tool(
+    "get_team_members",
+    "Daftar anggota tim penugasan (nama + NIP) berdasarkan assigned_to di "
+    "sasaran-assignment.json, di-lookup ke data user. Dipakai untuk mengisi tabel "
+    "Tim di context.md. Jabfung tidak tersimpan di sistem — gunakan default wajar.",
+    {"penugasan_folder": str},
+)
+async def get_team_members(args: dict) -> dict:
+    from app.database import SessionLocal
+    from app.models import User
+
+    folder = Path(args["penugasan_folder"])
+    assignment = safe_read_json(folder / "_PKP" / "sasaran-assignment.json")
+    names: list[str] = []
+    if isinstance(assignment, dict):
+        for s in assignment.get("sasaran", []) or []:
+            for nm in (s.get("assigned_to") or []):
+                if nm and nm not in names:
+                    names.append(nm)
+
+    members: list[dict] = []
+    if names:
+        async with SessionLocal() as db:
+            rows = (
+                await db.execute(select(User).where(User.nama_lengkap.in_(names)))
+            ).scalars().all()
+            found = {u.nama_lengkap: u.nip for u in rows}
+        for nm in names:
+            members.append({"nama": nm, "nip": found.get(nm, "[DIISI AUDITOR]")})
+
+    return {
+        "content": [{
+            "type": "text",
+            "text": json.dumps({"anggota": members}, ensure_ascii=False),
+        }]
+    }
+
+
+@tool(
+    "write_context_md",
+    "Tulis/timpa context.md penugasan dengan konten lengkap (markdown). Pakai untuk "
+    "menyimpan context.md hasil generate AI. WAJIB format lolos QC: ada baris "
+    "`Tujuan: ...` dan `Ruang Lingkup: ...` (inline, bukan heading), tabel Tim dengan "
+    "jabfung (mis. Auditor Madya/Muda/Pertama), tanpa placeholder selain [DIISI AUDITOR].",
+    {"penugasan_folder": str, "content": str},
+)
+async def write_context_md(args: dict) -> dict:
+    folder = Path(args["penugasan_folder"])
+    content = args.get("content", "")
+    if not content.strip():
+        return {
+            "content": [{"type": "text", "text": "FAILED|content kosong"}],
+            "is_error": True,
+        }
+    path = folder / "context.md"
+    path.write_text(content, encoding="utf-8")
+    return {
+        "content": [{
+            "type": "text",
+            "text": f"OK|context.md ditulis ({len(content)} char)",
+        }]
+    }
+
+
+KKP_TOOLS = [
+    read_context, list_ingested, read_ingested_digest, get_team_members,
+    write_context_md, append_temuan, render_kkp_docx, run_qc_kkp,
+]

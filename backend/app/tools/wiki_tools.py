@@ -1,18 +1,29 @@
-"""Tools wiki — agen akses pattern temuan dari knowledge base auditor.
+"""Tools wiki — agen akses pattern temuan + konteks dari knowledge base auditor.
 
-Folder wiki/ berisi pattern temuan + (rencana) peraturan/glossary. Struktur:
+Folder wiki/ berisi pattern temuan + konteks pendukung (pola-berulang, glossary,
+regulasi). Struktur:
 
     wiki/
-    └── temuan-patterns/
-        ├── reviu-pengadaan/
-        │   ├── README.md
-        │   └── RP-08-hps-rfi-minimum.md
-        └── reviu-rka-kl/
-            ├── README.md
-            └── RKA-01-tor-7-blok.md
+    ├── temuan-patterns/
+    │   ├── reviu-pengadaan/
+    │   │   ├── README.md
+    │   │   ├── RP-08-hps-rfi-minimum.md
+    │   │   ├── RP-09-kontrak-tanpa-kontrak-sotk.md
+    │   │   └── ... (RP-10 ... RP-16)
+    │   └── reviu-rka-kl/
+    │       ├── README.md
+    │       ├── RKA-01-tor-7-blok.md
+    │       └── ... (RKA-02 ... RKA-07)
+    └── konteks/
+        ├── README.md
+        ├── pola-temuan-berulang.md    (id KONTEKS-POLA-BERULANG)
+        ├── glossary-komdigi.md         (id KONTEKS-GLOSSARY)
+        └── regulasi-kunci.md           (id KONTEKS-REGULASI)
 
 Setiap file pattern punya YAML frontmatter (id, skill, kategori, severity,
 judul, kriteria_baku, tags) lalu body markdown.
+Setiap file konteks punya YAML frontmatter (id, kategori=konteks, judul, sumber,
+tanggal_update, tags) lalu body markdown.
 
 Path resolusi via env var APP_WIKI_PATH (lihat config.py).
 """
@@ -241,4 +252,135 @@ async def get_temuan_pattern(args: dict) -> dict:
     }
 
 
-WIKI_TOOLS = [list_temuan_patterns, get_temuan_pattern]
+# =============================================================================
+# KONTEKS — pola temuan berulang, glossary, regulasi kunci
+# =============================================================================
+
+# Mapping kategori → nama file di wiki/konteks/. Sengaja whitelist supaya agen
+# tidak bisa baca file sembarangan.
+_KONTEKS_FILES: dict[str, str] = {
+    "pola-berulang": "pola-temuan-berulang.md",
+    "glossary": "glossary-komdigi.md",
+    "regulasi": "regulasi-kunci.md",
+}
+
+
+def _konteks_dir() -> Path:
+    return settings.wiki_path / "konteks"
+
+
+@tool(
+    "list_konteks",
+    "Daftar konteks pendukung yang tersedia di knowledge base auditor "
+    "(pola temuan berulang, glossary istilah Komdigi, regulasi kunci). "
+    "Konteks ini WAJIB DIBACA SEBELUM susun KKP supaya tidak halusinasi "
+    "(salah definisi istilah, ngarang sitasi pasal, atau memaksakan pola). "
+    "Return list ringkas {kategori, id, judul, file, tanggal_update}.",
+    {},
+)
+async def list_konteks(_args: dict) -> dict:
+    folder = _konteks_dir()
+    if not folder.exists():
+        return {
+            "content": [{
+                "type": "text",
+                "text": (
+                    f"KONTEKS_KOSONG|wiki_path={settings.wiki_path}|"
+                    f"Folder konteks/ belum ada. Lanjutkan tanpa konteks tapi "
+                    f"hati-hati halusinasi (terutama sitasi peraturan)."
+                ),
+            }]
+        }
+
+    items: list[dict] = []
+    for kategori, filename in _KONTEKS_FILES.items():
+        f = folder / filename
+        if not f.exists():
+            continue
+        try:
+            content = f.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        meta, _ = _parse_frontmatter(content)
+        items.append({
+            "kategori": kategori,
+            "id": meta.get("id", f.stem),
+            "judul": meta.get("judul", ""),
+            "sumber": meta.get("sumber", ""),
+            "tanggal_update": meta.get("tanggal_update", ""),
+            "tags": meta.get("tags", []) if isinstance(meta.get("tags"), list) else [],
+            "file": str(f.relative_to(settings.wiki_path)),
+        })
+
+    return {
+        "content": [{
+            "type": "text",
+            "text": json.dumps(
+                {"total": len(items), "konteks": items},
+                ensure_ascii=False,
+            ),
+        }]
+    }
+
+
+@tool(
+    "get_konteks",
+    "Baca isi LENGKAP satu konteks pendukung berdasarkan kategori. "
+    "Kategori valid: 'pola-berulang' (9 akar masalah lintas LHP/LHR), "
+    "'glossary' (definisi akronim + profil vendor mitra), "
+    "'regulasi' (pasal baku + kutipan inti — cegah salah sitasi). "
+    "Pakai SEBELUM tulis bagian 'kriteria' di temuan untuk pastikan sitasi peraturan benar.",
+    {"kategori": str},
+)
+async def get_konteks(args: dict) -> dict:
+    kategori = args["kategori"].strip().lower()
+    if kategori not in _KONTEKS_FILES:
+        valid = ", ".join(_KONTEKS_FILES.keys())
+        return {
+            "content": [{
+                "type": "text",
+                "text": f"FAILED|kategori='{kategori}' tidak valid. Pilih: {valid}",
+            }],
+            "is_error": True,
+        }
+
+    f = _konteks_dir() / _KONTEKS_FILES[kategori]
+    if not f.exists():
+        return {
+            "content": [{
+                "type": "text",
+                "text": f"NOT_FOUND|file konteks tidak ada: {f}",
+            }],
+            "is_error": True,
+        }
+
+    try:
+        content = f.read_text(encoding="utf-8")
+    except OSError as e:
+        return {
+            "content": [{"type": "text", "text": f"FAILED|gagal baca: {e}"}],
+            "is_error": True,
+        }
+
+    meta, body = _parse_frontmatter(content)
+    return {
+        "content": [{
+            "type": "text",
+            "text": json.dumps(
+                {
+                    "kategori": kategori,
+                    "id": meta.get("id", f.stem),
+                    "judul": meta.get("judul", ""),
+                    "sumber": meta.get("sumber", ""),
+                    "tanggal_update": meta.get("tanggal_update", ""),
+                    "tags": meta.get("tags", []) if isinstance(meta.get("tags"), list) else [],
+                    "file": str(f.relative_to(settings.wiki_path)),
+                    "body_markdown": body[:12000],  # cap 12KB — konteks lebih besar dari pattern
+                },
+                ensure_ascii=False,
+            ),
+        }]
+    }
+
+
+WIKI_TOOLS = [list_temuan_patterns, get_temuan_pattern, list_konteks, get_konteks]

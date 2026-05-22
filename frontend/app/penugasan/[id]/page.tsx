@@ -835,19 +835,18 @@ function SetupPenugasanTab({
 
       {role === 'AT' ? (
         <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded text-sm text-blue-900">
-          <strong>Penyempurnaan Konteks (peran AT).</strong> Anda bisa edit{' '}
-          <strong>context.md</strong> di bawah ini untuk melengkapi detail yang Anda
-          temukan saat analisis. Bagian sasaran di bawah hanya menampilkan{' '}
-          <strong>sasaran yang ditugaskan kepada Anda</strong> ({currentUserName}) — read-only,
-          karena assignment adalah domain Ketua Tim.
+          <strong>Konteks (peran AT).</strong> <strong>context.md di-generate otomatis oleh AI</strong>{' '}
+          (dari hasil digest dokumen + sasaran) saat Anda menjalankan analisis di tab Chat AT.
+          Anda boleh edit manual di bawah bila perlu menyempurnakan. Bagian sasaran hanya
+          menampilkan <strong>sasaran yang ditugaskan kepada Anda</strong> ({currentUserName}) — read-only.
         </div>
       ) : (
         <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded text-sm text-blue-900">
-          <strong>Setup Penugasan (peran KT/PT).</strong> Isi dua hal di bawah
-          sebelum Anggota Tim bisa mulai analisis: (1) <strong>context.md</strong> — metadata
-          penugasan termasuk tabel tim, dan (2) <strong>sasaran-assignment</strong> — daftar
-          sasaran reviu yang di-assign ke anggota. Anda juga bisa bantu lewat
-          tab <strong>Chat KT</strong> untuk drafting via percakapan.
+          <strong>Setup Penugasan (peran KT/PT).</strong> Fokus Anda: isi{' '}
+          <strong>Sasaran reviu + langkah kerja</strong> di bawah dan assign ke anggota tim.
+          {' '}<strong>context.md di-generate otomatis oleh AI</strong> saat Anggota Tim mulai
+          analisis — tidak perlu diisi manual. Bagian context di bawah <strong>opsional</strong>{' '}
+          (hanya untuk override bila perlu). Bisa juga bantu lewat tab <strong>Chat KT</strong>.
         </div>
       )}
 
@@ -855,9 +854,11 @@ function SetupPenugasanTab({
       <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
         <div className="px-5 py-3 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
           <div>
-            <h3 className="font-semibold text-primary-dark">1. Konteks Penugasan (context.md)</h3>
+            <h3 className="font-semibold text-primary-dark">
+              1. Konteks Penugasan (context.md) <span className="text-xs font-normal text-blue-600">· otomatis oleh AI</span>
+            </h3>
             <p className="text-xs text-gray-500 mt-0.5">
-              Isi Periode, Tahun Anggaran, Tujuan reviu, dan Tabel Tim. Format Markdown.
+              Di-generate AI dari digest dokumen + sasaran saat AT mulai analisis. Opsional: edit manual untuk override.
             </p>
           </div>
           <div className="flex items-center gap-3">

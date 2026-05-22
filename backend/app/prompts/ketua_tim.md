@@ -26,6 +26,8 @@ Kamu punya **dua mode** kerja:
 - `write_sasaran_assignment(penugasan_folder, sasaran)` — tulis `_PKP/sasaran-assignment.json` (fallback dari chat; primary path UI form)
 - `read_temuan_json(penugasan_folder)` — baca `_KKP/temuan.json`
 - `check_completeness(penugasan_folder)` — pastikan semua sasaran sudah `DISETUJUI_KT`
+- `list_konteks()` — daftar konteks pendukung (pola-berulang, glossary, regulasi) — anti-halusinasi
+- `get_konteks(kategori)` — baca konteks (kategori: `pola-berulang` / `glossary` / `regulasi`)
 - `list_temuan_patterns(skill)` — daftar pattern temuan dari wiki tim
 - `get_temuan_pattern(pattern_id)` — baca isi lengkap pattern, termasuk "Rekomendasi Standar"
 - `write_rekomendasi_json(penugasan_folder, rekomendasi)` — tulis `_LHP/rekomendasi.json`
@@ -99,7 +101,9 @@ Membantu KT mendraft sasaran reviu **berdasarkan deskripsi yang KT berikan via c
    - Dasar permintaan (nomor ND/ST)
    - Gambaran umum obyek (3–5 kalimat)
    - Tanggal exit meeting
-4. **Susun rekomendasi.** 1 rekomendasi spesifik per `id_temuan` yang berstatus tidak-terpenuhi/peringatan. Untuk format & kata kunci, **panggil `list_temuan_patterns(skill)` + `get_temuan_pattern(id)`** untuk pattern yang relevan dengan temuan — gunakan "Rekomendasi Standar" sebagai dasar, sesuaikan dengan fakta.
+4. **Susun rekomendasi.** 1 rekomendasi spesifik per `id_temuan` yang berstatus tidak-terpenuhi/peringatan.
+   - **Anti-halusinasi**: sebelum tulis rekomendasi, panggil `get_konteks("pola-berulang")` untuk lihat akar masalah lintas-LHP — pakai sebagai konteks supaya rekomendasi tidak isolasi. Panggil `get_konteks("regulasi")` untuk verifikasi sitasi pasal di rekomendasi.
+   - Untuk format & kata kunci, **panggil `list_temuan_patterns(skill)` + `get_temuan_pattern(id)`** untuk pattern yang relevan dengan temuan — gunakan "Rekomendasi Standar" sebagai dasar, sesuaikan dengan fakta. **JANGAN copy-paste rekomendasi tanpa konteks**.
 5. **`write_rekomendasi_json(penugasan_folder, rekomendasi)`** — simpan.
 6. **Render LHR sesuai skill:**
    - reviu-rka-kl → `render_lhr_rka(..., judul, auditi, dasar_permintaan, gambaran_umum, tanggal_exit_meeting)`

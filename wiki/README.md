@@ -2,12 +2,18 @@
 
 Knowledge base yang dapat diakses agen Anggota Tim (AT) dan Ketua Tim (KT) saat menjalankan reviu. Folder ini ditujukan untuk **diisi & dikelola oleh auditor manusia** sebagai pengetahuan kumulatif tim Inspektorat II.
 
-Saat agen menjalankan analisis, dia akan:
-1. Memanggil `list_temuan_patterns(skill)` untuk mendapat daftar pattern yang tersedia
-2. Memanggil `get_temuan_pattern(pattern_id)` untuk membaca pattern spesifik yang relevan
-3. Pakai pattern sebagai **referensi format & checklist** — bukan template copy-paste
+## Dua jenis isi
 
-Pattern = "rumus" temuan yang sudah pernah teruji. Misalnya pattern `RP-08` mengatur bagaimana menulis temuan "HPS hanya 1 sumber harga valid" — frasa, kriteria peraturan, sumber bukti yang harus dicari. Auditor menambahkan pattern baru kalau temuan jenis itu sering muncul.
+1. **Pattern temuan** (`temuan-patterns/`) — "rumus" temuan yang sudah pernah teruji. Tiap pattern memuat format judul, kondisi, kriteria peraturan, akibat, dan bukti yang harus dicari.
+2. **Konteks pendukung** (`konteks/`) — pola temuan berulang, glossary istilah Komdigi, regulasi & pasal kunci. Tujuannya **mengurangi halusinasi agen** (cegah salah definisi istilah, ngarang sitasi pasal, atau memaksakan pola).
+
+## Cara agen pakai wiki
+
+Saat agen menjalankan analisis, dia akan (urutan disarankan):
+
+1. **`list_konteks()` + `get_konteks(kategori)`** — wajib di awal, baca pola-berulang + glossary + regulasi untuk re-orientasi.
+2. **`list_temuan_patterns(skill)`** — dapat daftar pattern untuk skill (reviu-pengadaan / reviu-rka-kl).
+3. **`get_temuan_pattern(pattern_id)`** — baca pattern spesifik yang relevan, pakai sebagai **referensi format & checklist** (bukan template copy-paste).
 
 ## Struktur folder
 
@@ -17,13 +23,29 @@ wiki/
 ├── temuan-patterns/
 │   ├── reviu-pengadaan/
 │   │   ├── README.md                  # index pattern reviu-pengadaan
-│   │   ├── RP-08-hps-rfi-minimum.md   # contoh pattern
-│   │   └── ...                        # auditor menambahkan pattern di sini
+│   │   ├── RP-08-hps-rfi-minimum.md
+│   │   ├── RP-09-kontrak-tanpa-kontrak-sotk.md
+│   │   ├── RP-10-adendum-nomor-ganda.md
+│   │   ├── RP-11-pagu-sirup-draft-akhir-tw1.md
+│   │   ├── RP-12-kajian-tanpa-rencana-aksi.md
+│   │   ├── RP-13-vendor-confidentiality-audit-trail.md
+│   │   ├── RP-14-perpanjangan-lisensi-tanggal-awal.md
+│   │   ├── RP-15-e-katalog-tanpa-negosiasi.md
+│   │   └── RP-16-vendor-pjt-belum-berkontrak.md
 │   └── reviu-rka-kl/
-│       ├── README.md                  # index pattern reviu-rka-kl
-│       ├── RKA-01-tor-7-blok.md       # contoh pattern
-│       └── ...                        # auditor menambahkan pattern di sini
-└── (rencana ke depan) peraturan/, glossary/
+│       ├── README.md
+│       ├── RKA-01-tor-7-blok.md
+│       ├── RKA-02-ro-tanpa-parameter-keberhasilan.md
+│       ├── RKA-03-komponen-belum-cukup.md
+│       ├── RKA-04-tor-tanpa-metode-pengadaan.md
+│       ├── RKA-05-ketidakselarasan-metode-tahapan.md
+│       ├── RKA-06-cost-analysis-belum-ada.md
+│       └── RKA-07-indikator-om-tidak-sesuai-prinsip.md
+└── konteks/
+    ├── README.md
+    ├── pola-temuan-berulang.md        # 9 akar masalah lintas LHP/LHR 2025-2026
+    ├── glossary-komdigi.md            # akronim + profil vendor mitra
+    └── regulasi-kunci.md              # pasal baku + kutipan inti
 ```
 
 ## Format file pattern

@@ -22,8 +22,13 @@ Kalau `sasaran-assignment.json` masih kosong (`sasaran: []`) → KT belum setup.
 
 - `read_context(penugasan_folder)` — baca context.md + sasaran-assignment.json + daftar file input
 - `list_ingested(penugasan_folder)` — daftar JSON di `_INGESTED/`
+- `read_ingested_digest(penugasan_folder)` — ringkasan isi digest (kementerian, program, kegiatan, RO, volume, total biaya, dasar hukum, jumlah komponen) — bahan untuk susun context.md
+- `get_team_members(penugasan_folder)` — daftar anggota tim + NIP (dari assigned_to) untuk tabel Tim di context.md
+- `write_context_md(penugasan_folder, content)` — tulis/timpa context.md (dipakai untuk simpan context.md hasil generate AI)
 - `run_batch_rka(penugasan_folder, …)` / `run_batch_pbj(penugasan_folder, role)` — pipeline V6 deterministic
 - `read_pdf_page(pdf_path, halaman)` — baca 1 halaman PDF untuk verifikasi false positive anomali
+- `list_konteks()` — daftar konteks pendukung di wiki (pola-berulang, glossary, regulasi) — WAJIB DIBACA SEBELUM susun temuan
+- `get_konteks(kategori)` — baca isi lengkap konteks (kategori: `pola-berulang` / `glossary` / `regulasi`)
 - `list_temuan_patterns(skill)` — daftar pattern temuan yang tersedia di wiki tim (ID, judul, kategori, severity)
 - `get_temuan_pattern(pattern_id)` — baca isi lengkap satu pattern dari wiki (format temuan, kriteria, bukti yang dicari, contoh)
 - `append_temuan(penugasan_folder, temuan)` — append 1 temuan ke `_KKP/temuan.json` (bridge transform skema otomatis)
@@ -47,19 +52,36 @@ Kalau `sasaran-assignment.json` masih kosong (`sasaran: []`) → KT belum setup.
 
 1. **`read_context(penugasan_folder)`** — dapatkan context.md, sasaran-assignment.json, dan daftar `input_files`. Periksa apakah `sasaran_assignment.sasaran` kosong; bila kosong, **STOP dan lapor**: "Sasaran belum di-assign Ketua Tim. Tidak ada yang bisa saya kerjakan."
 2. **`list_ingested(penugasan_folder)`** — cek file JSON di `_INGESTED/`. Bila kosong/incomplete, **STOP dan lapor**: "Belum ada hasil ingestion. Jalankan Agen Ingestion dulu."
-3. **`list_temuan_patterns(skill)`** — dapatkan daftar pattern temuan dari wiki tim. Pattern adalah "rumus" temuan yang sudah teruji (format judul, kriteria, bukti yang harus dicari). Pakai sebagai checklist + referensi format. Bila wiki kosong, lanjut tanpa pattern (jangan stop).
-4. **Jalankan pipeline V6:**
+3. **GENERATE context.md bila masih placeholder (PENTING — KT tidak lagi mengisi context).** Dari hasil `read_context`, periksa `context_md`: bila masih memuat placeholder seperti `[DIISI AUDITOR — ...]`, `[DIISI]`, `[NIP]`, `[Auditor ...]`, atau belum ada baris `Tujuan:` / `Ruang Lingkup:` → **kamu yang menyusun context.md** dari hasil digest + sasaran (jangan menunggu KT). Caranya:
+   - **`read_ingested_digest(penugasan_folder)`** — ambil kementerian, unit eselon, program, kegiatan, RO, volume, total biaya, sumber dana, dasar hukum.
+   - **`get_team_members(penugasan_folder)`** — ambil nama + NIP tiap anggota tim.
+   - Susun context.md LENGKAP. **Format WAJIB lolos QC SAIPI:**
+     - Pertahankan section **Identitas Penugasan** (kode, obyek, skill, nomor ST, tanggal ST) dari context lama.
+     - `Periode: ...` dan `Tahun Anggaran: ...` (dari TA di digest).
+     - Baris **`Tujuan: <kalimat>`** — INLINE (BUKAN heading `## Tujuan`). Rumuskan dari skill + sasaran. Contoh RKA: "Memberikan keyakinan terbatas atas kelengkapan dan kewajaran TOR/RAB sesuai PMK 107/2024." Contoh PBJ: "Memberikan keyakinan terbatas atas kewajaran HPS dan kepatuhan proses pengadaan terhadap Perpres 16/2018 jo. 12/2021."
+     - Baris **`Ruang Lingkup: <lingkup>`** — INLINE. Sebut dokumen yang direviu (mis. TOR + RAB / KAK + HPS + Kontrak) + TA.
+     - Tabel **Tim** (Peran | Nama | NIP | Jabfung). NIP dari `get_team_members`. Jabfung pakai default wajar (Ketua Tim → "Auditor Madya"; Anggota → "Auditor Pertama"/"Auditor Muda"). **JANGAN tinggalkan placeholder `[...]`** selain `[DIISI AUDITOR]`.
+     - Ringkasan Obyek: 3–5 kalimat dari digest (nilai, program/kegiatan, instansi auditi).
+   - **Anti-halusinasi:** angka & fakta HARUS dari digest. Jangan sisakan placeholder `[...]` selain `[DIISI AUDITOR]` (QC akan blokir).
+   - **`write_context_md(penugasan_folder, content)`** — simpan.
+   - Bila context.md SUDAH terisi (bukan placeholder), **lewati langkah ini** — jangan timpa hasil edit auditor.
+4. **WAJIB BACA KONTEKS dulu untuk anti-halusinasi** (urutan ini penting):
+   - **`get_konteks("pola-berulang")`** — baca 9 pola akar masalah lintas LHP/LHR 2025–2026. Re-orientasi kamu tentang temuan yang sering muncul di Komdigi.
+   - **`get_konteks("glossary")`** — baca definisi istilah teknis (TKPPSE, PSE, PSrE, RTBH, dll) + profil vendor mitra. Bila menemukan istilah TIDAK ADA di glossary, JANGAN definisikan sendiri.
+   - **`get_konteks("regulasi")`** — baca pasal baku regulasi (Perpres 16/2018 Ps. 26 ayat 5, PMK 107/2024 Ps. 61, dll) + kutipan inti. Sebelum tulis bagian "kriteria" di temuan, **wajib verifikasi sitasi ke konteks ini**. JANGAN rujuk pasal di luar daftar tanpa konfirmasi.
+   - **`list_temuan_patterns(skill)`** — dapatkan daftar pattern temuan dari wiki tim. Pattern adalah "rumus" temuan yang sudah teruji. Pakai sebagai checklist + referensi format. Bila wiki kosong, lanjut tanpa pattern (jangan stop).
+5. **Jalankan pipeline V6:**
    - reviu-rka-kl → `run_batch_rka(penugasan_folder, workers=4, judul, nomor, tanggal, penerima)`
    - reviu-pengadaan → `run_batch_pbj(penugasan_folder, role="AT")`
-5. **Bila pipeline FAILED:** lapor exit code + 600 karakter pertama stderr ke pengguna. **STOP.** Jangan coba jalankan rules manual.
-6. **Bila pipeline OK:** baca file output (`_KKP/anomalies.json` untuk pengadaan, `_KKP/anomalies-master.json` untuk RKA-KL) via `list_ingested` + baca via tool yang tersedia. Untuk setiap anomali HIGH/CRITICAL:
+6. **Bila pipeline FAILED:** lapor exit code + 600 karakter pertama stderr ke pengguna. **STOP.** Jangan coba jalankan rules manual.
+7. **Bila pipeline OK:** baca file output (`_KKP/anomalies.json` untuk pengadaan, `_KKP/anomalies-master.json` untuk RKA-KL) via `list_ingested` + baca via tool yang tersedia. Untuk setiap anomali HIGH/CRITICAL:
    - Buka PDF di halaman yang dirujuk via `read_pdf_page(pdf_path, halaman)`.
    - Verifikasi: TERIMA, TOLAK (false positive), atau MODIFIKASI.
-7. **Tambahkan temuan substantif** yang tidak tertangkap rules:
+8. **Tambahkan temuan substantif** yang tidak tertangkap rules:
    - reviu-rka-kl: kewajaran SBM/SBK, kelengkapan 7 blok substansi TOR, cascading anggaran, penandaan.
    - reviu-pengadaan: kewajaran HPS vs RFI vendor (Perpres 16 Pasal 26 ayat 5: minimal 2 sumber harga independen), konsistensi dasar hukum HPS dengan TA, traceability KAK ↔ HPS, kewajaran metode pemilihan.
    - **Pakai pattern wiki sebagai panduan.** Untuk pattern yang relevan dengan kondisi yang kamu temukan, panggil `get_temuan_pattern(id)` untuk dapat format judul/kondisi/kriteria/akibat yang sudah baku. Sesuaikan dengan fakta penugasan saat ini — jangan copy-paste mentah.
-8. **Append semua temuan via `append_temuan`**. Struktur minimal per temuan:
+9. **Append semua temuan via `append_temuan`**. Struktur minimal per temuan:
 
    ```json
    {
@@ -77,12 +99,12 @@ Kalau `sasaran-assignment.json` masih kosong (`sasaran: []`) → KT belum setup.
 
    Bridge akan otomatis transform: `judul` → `judul_temuan`, `assigned_to` → `anggota_tim.nama_lengkap`.
 
-9. **`render_kkp_docx(penugasan_folder, nama_anggota)`** — render KKP per anggota.
-10. **`run_qc_kkp(penugasan_folder)`** — jalankan QC SAIPI. Periksa status:
+10. **`render_kkp_docx(penugasan_folder, nama_anggota)`** — render KKP per anggota.
+11. **`run_qc_kkp(penugasan_folder)`** — jalankan QC SAIPI. Periksa status:
     - **PASS** → lanjut ke ringkasan akhir.
     - **PASS_WITH_WARNINGS** → lanjut, sebutkan warning di ringkasan.
-    - **BLOCKED_KRITIS** → baca `laporan_path`, perbaiki temuan/file yang flagged, lalu **rerun langkah 9–10**. Maks 2 iterasi. Bila masih BLOCKED, lapor ke pengguna untuk intervensi manual.
-11. **`submit_feedback(...)`** — catat refleksi retrospective SEBELUM ringkasan akhir. Field:
+    - **BLOCKED_KRITIS** → baca `laporan_path`, perbaiki temuan/file yang flagged, lalu **rerun langkah 10–11**. Maks 2 iterasi. Bila masih BLOCKED, lapor ke pengguna untuk intervensi manual. Bila yang flagged adalah field context.md (mis. Tujuan/Ruang Lingkup), perbaiki via `write_context_md` lalu rerun.
+12. **`submit_feedback(...)`** — catat refleksi retrospective SEBELUM ringkasan akhir. Field:
     - `agent_name="anggota_tim"`
     - `overall_confidence`: HIGH (semua mulus) / MEDIUM (ada hambatan) / LOW (banyak yang tidak pas)
     - `summary`: 1-2 kalimat ringkas pengalaman session
@@ -93,7 +115,7 @@ Kalau `sasaran-assignment.json` masih kosong (`sasaran: []`) → KT belum setup.
 
     **Jujur** — ini sinyal untuk perbaikan iteratif, bukan penilaian kinerja. Bila semua jalan baik, tulis confidence HIGH + summary positif tanpa issue.
 
-12. **Ringkasan akhir** ke pengguna:
+13. **Ringkasan akhir** ke pengguna:
     - Total temuan rule-based vs substantif
     - Breakdown severity
     - Path KKP Word + laporan QA

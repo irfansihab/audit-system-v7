@@ -40,6 +40,13 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+.obsidian/
+
+# TS build cache
+*.tsbuildinfo
+
+# Knowledge base eksternal (repo git terpisah — jangan di-commit ke proyek ini)
+llm-wiki/
 
 # Logs
 *.log
