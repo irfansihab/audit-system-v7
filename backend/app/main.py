@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import get_settings
 from app.database import Base, engine
-from app.routes import agen, auth, dokumen, feedback, files, penugasan
+from app.routes import agen, auth, cacm, dokumen, feedback, files, knowledge, penugasan
 
 settings = get_settings()
 
@@ -40,6 +40,8 @@ app.include_router(dokumen.router)
 app.include_router(agen.router)
 app.include_router(files.router)
 app.include_router(feedback.router)
+app.include_router(knowledge.router)
+app.include_router(cacm.router)
 
 
 @app.get("/", tags=["meta"])

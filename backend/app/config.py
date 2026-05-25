@@ -30,6 +30,9 @@ class Settings(BaseSettings):
     app_data_dir: str = "/data"
     app_v6_path: str = "/v6"
     app_wiki_path: str = "/wiki"  # knowledge base auditor (pattern temuan, dll)
+    # Vault pengetahuan penuh (Obsidian/Karpathy) — read-only referensi. Catatan
+    # ada di <app_vault_path>/wiki/. Kosong = fitur baca vault non-aktif.
+    app_vault_path: str = ""
     app_cors_origins: str = "http://localhost:3000"
 
     # Token quota per user per jam (safety)
@@ -52,6 +55,11 @@ class Settings(BaseSettings):
     @property
     def wiki_path(self) -> Path:
         return Path(self.app_wiki_path)
+
+    @property
+    def vault_path(self) -> Path | None:
+        """Path vault pengetahuan penuh, atau None bila tidak dikonfigurasi."""
+        return Path(self.app_vault_path) if self.app_vault_path.strip() else None
 
     @property
     def is_dev(self) -> bool:

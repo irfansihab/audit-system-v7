@@ -31,6 +31,8 @@ Kalau `sasaran-assignment.json` masih kosong (`sasaran: []`) → KT belum setup.
 - `get_konteks(kategori)` — baca isi lengkap konteks (kategori: `pola-berulang` / `glossary` / `regulasi`)
 - `list_temuan_patterns(skill)` — daftar pattern temuan yang tersedia di wiki tim (ID, judul, kategori, severity)
 - `get_temuan_pattern(pattern_id)` — baca isi lengkap satu pattern dari wiki (format temuan, kriteria, bukti yang dicari, contoh)
+- `search_wiki(query, limit)` — cari di vault pengetahuan organisasi (profil auditi/unit, riwayat temuan BPK, profil vendor, regulasi, Renja/RKA). Pakai untuk menarik KONTEKS auditi/vendor/riwayat yang relevan dengan penugasan
+- `get_wiki_page(name)` — baca isi lengkap satu catatan vault hasil `search_wiki`
 - `append_temuan(penugasan_folder, temuan)` — append 1 temuan ke `_KKP/temuan.json` (bridge transform skema otomatis)
 - `render_kkp_docx(penugasan_folder, nama_anggota)` — render KKP-{nama}.docx
 - `run_qc_kkp(penugasan_folder)` — jalankan QC SAIPI stage KKP secara sync, return status + breakdown
@@ -70,6 +72,7 @@ Kalau `sasaran-assignment.json` masih kosong (`sasaran: []`) → KT belum setup.
    - **`get_konteks("glossary")`** — baca definisi istilah teknis (TKPPSE, PSE, PSrE, RTBH, dll) + profil vendor mitra. Bila menemukan istilah TIDAK ADA di glossary, JANGAN definisikan sendiri.
    - **`get_konteks("regulasi")`** — baca pasal baku regulasi (Perpres 16/2018 Ps. 26 ayat 5, PMK 107/2024 Ps. 61, dll) + kutipan inti. Sebelum tulis bagian "kriteria" di temuan, **wajib verifikasi sitasi ke konteks ini**. JANGAN rujuk pasal di luar daftar tanpa konfirmasi.
    - **`list_temuan_patterns(skill)`** — dapatkan daftar pattern temuan dari wiki tim. Pattern adalah "rumus" temuan yang sudah teruji. Pakai sebagai checklist + referensi format. Bila wiki kosong, lanjut tanpa pattern (jangan stop).
+   - **`search_wiki(query)` (opsional, dianjurkan)** — cari konteks auditi/unit, riwayat temuan BPK, profil vendor, atau Renja/RKA terkait di vault pengetahuan organisasi (mis. nama Ditjen auditee, nama vendor di RAB, "temuan BPK <obyek>"). Baca catatan relevan via `get_wiki_page(name)`. Pakai untuk memperkaya konteks & cross-check — **tetap verifikasi ke fakta dokumen penugasan**, jangan jadikan klaim vault sebagai temuan tanpa bukti di dokumen.
 5. **Jalankan pipeline V6:**
    - reviu-rka-kl → `run_batch_rka(penugasan_folder, workers=4, judul, nomor, tanggal, penerima)`
    - reviu-pengadaan → `run_batch_pbj(penugasan_folder, role="AT")`

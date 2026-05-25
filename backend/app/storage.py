@@ -138,14 +138,20 @@ def _all_sasaran_disetujui(folder: Path) -> bool:
     return bool(sasaran) and all(s.get("status") == "DISETUJUI_KT" for s in sasaran)
 
 
-def compute_penugasan_status(folder: Path, dokumen_statuses: list[str]):
+def compute_penugasan_status(folder: Path, dokumen_statuses: list[str], stored_status=None):
     """Turunkan status penugasan dari artefak nyata di disk, bukan dari field DB
     yang tidak pernah dimajukan. Prioritas dari tahap terjauh.
 
     Catatan: field `Penugasan.status` di DB historically tidak ter-update di
-    setiap stage; status display selalu dihitung ulang di sini.
+    setiap stage; status display selalu dihitung ulang di sini. Pengecualian:
+    `USULAN_CACM` (usulan dari EWS yang belum diterima PT) tidak punya artefak,
+    jadi dipertahankan apa adanya.
     """
     from app.models import PenugasanStatus
+
+    stored_val = stored_status.value if hasattr(stored_status, "value") else stored_status
+    if stored_val == PenugasanStatus.USULAN_CACM.value:
+        return PenugasanStatus.USULAN_CACM
 
     lhp_dir = folder / "_LHP"
     kkp_dir = folder / "_KKP"

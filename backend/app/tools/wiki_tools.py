@@ -383,4 +383,193 @@ async def get_konteks(args: dict) -> dict:
     }
 
 
-WIKI_TOOLS = [list_temuan_patterns, get_temuan_pattern, list_konteks, get_konteks]
+# =============================================================================
+# VAULT — pencarian penuh atas knowledge base Obsidian/Karpathy (read-only)
+# =============================================================================
+#
+# Vault (llm-wiki/) berisi ratusan catatan hasil ingest dokumen resmi non-rahasia
+# (profil unit/auditi, riwayat temuan BPK, profil vendor, regulasi, Renja/RKA, dll).
+# Berbeda dari `wiki/` proyek yang hanya pattern+konteks terkurasi. Fitur ini
+# memberi agen jangkauan baca yang lebih luas saat analisis. Path via APP_VAULT_PATH.
+
+# File meta yang bukan catatan substantif — dikecualikan dari hasil search.
+_VAULT_SKIP = {"index.md", "log.md"}
+
+
+def _vault_notes_dir() -> Path | None:
+    """Folder catatan vault (<APP_VAULT_PATH>/wiki/), atau None bila tak dikonfigurasi."""
+    base = settings.vault_path
+    if base is None:
+        return None
+    notes = base / "wiki"
+    return notes if notes.exists() else None
+
+
+def _parse_vault_index(notes_dir: Path) -> dict[str, dict]:
+    """Parse index.md → {name: {section, summary}} dari baris '- [[name]] — desc'."""
+    out: dict[str, dict] = {}
+    idx = notes_dir / "index.md"
+    if not idx.exists():
+        return out
+    section = ""
+    try:
+        text = idx.read_text(encoding="utf-8")
+    except OSError:
+        return out
+    for line in text.splitlines():
+        s = line.strip()
+        if s.startswith("##"):
+            section = s.lstrip("#").strip()
+            continue
+        m = re.match(r"^-\s*\[\[([^\]]+)\]\]\s*[—-]?\s*(.*)$", s)
+        if m:
+            name = m.group(1).strip()
+            out[name] = {"section": section, "summary": m.group(2).strip()}
+    return out
+
+
+def vault_search(query: str, limit: int = 12) -> dict:
+    """Cari catatan vault relevan. Index-driven + full-text scoring sederhana.
+
+    Return dict siap-serialize: {configured, total, results:[{name,section,summary,
+    path,score,snippet}]}.
+    """
+    notes_dir = _vault_notes_dir()
+    if notes_dir is None:
+        return {"configured": False, "total": 0, "results": [],
+                "message": "Vault tidak dikonfigurasi (set APP_VAULT_PATH)."}
+
+    terms = [t for t in re.split(r"\W+", query.lower()) if len(t) >= 2]
+    if not terms:
+        return {"configured": True, "total": 0, "results": [],
+                "message": "Query terlalu pendek."}
+
+    index = _parse_vault_index(notes_dir)
+    scored: list[dict] = []
+    for f in notes_dir.glob("*.md"):
+        if f.name.lower() in _VAULT_SKIP:
+            continue
+        name = f.stem
+        try:
+            content = f.read_text(encoding="utf-8")[:30000]
+        except OSError:
+            continue
+        name_lc = name.lower()
+        meta = index.get(name, {})
+        summary = meta.get("summary", "")
+        summary_lc = summary.lower()
+        content_lc = content.lower()
+
+        score = 0
+        for t in terms:
+            score += name_lc.count(t) * 4
+            score += summary_lc.count(t) * 3
+            score += content_lc.count(t)
+        if score <= 0:
+            continue
+
+        # Snippet: baris pertama (bukan heading/frontmatter) yang memuat salah satu term
+        snippet = ""
+        for line in content.splitlines():
+            ls = line.strip()
+            if not ls or ls.startswith("#") or ls.startswith("---"):
+                continue
+            if any(t in ls.lower() for t in terms):
+                snippet = ls[:200]
+                break
+        scored.append({
+            "name": name,
+            "section": meta.get("section", ""),
+            "summary": summary,
+            "path": str(f.relative_to(notes_dir)),
+            "score": score,
+            "snippet": snippet,
+        })
+
+    scored.sort(key=lambda x: x["score"], reverse=True)
+    return {"configured": True, "total": len(scored), "results": scored[: max(1, limit)]}
+
+
+def vault_get_page(name: str) -> dict:
+    """Baca satu catatan vault by name (aman dari path traversal). Return dict."""
+    notes_dir = _vault_notes_dir()
+    if notes_dir is None:
+        return {"found": False, "configured": False,
+                "message": "Vault tidak dikonfigurasi (set APP_VAULT_PATH)."}
+
+    # Sanitasi: ambil basename saja, paksa .md
+    safe = Path(str(name)).name.strip()
+    if not safe:
+        return {"found": False, "configured": True, "message": "Nama kosong."}
+    if not safe.lower().endswith(".md"):
+        safe += ".md"
+
+    target = (notes_dir / safe).resolve()
+    notes_resolved = notes_dir.resolve()
+    # Pastikan tetap di dalam folder catatan vault
+    if notes_resolved not in target.parents or not target.is_file():
+        return {"found": False, "configured": True,
+                "message": f"Catatan tidak ditemukan: {safe}"}
+
+    try:
+        raw = target.read_text(encoding="utf-8")
+    except OSError as e:
+        return {"found": False, "configured": True, "message": f"Gagal baca: {e}"}
+
+    cap = 16000
+    body = raw[:cap]
+    return {
+        "found": True,
+        "configured": True,
+        "name": target.stem,
+        "path": str(target.relative_to(notes_resolved)),
+        "content": body,
+        "truncated": len(raw) > cap,
+    }
+
+
+@tool(
+    "search_wiki",
+    "Cari catatan di vault pengetahuan organisasi (llm-wiki) — ratusan catatan hasil "
+    "ingest dokumen resmi: profil unit/auditi, riwayat temuan BPK, profil vendor, "
+    "regulasi, Renja/RKA, isu strategis. Pakai SAAT analisis untuk menarik konteks "
+    "auditi/vendor/riwayat yang relevan (mis. 'temuan BPK PSTE', 'profil Ditjen Ekosdig', "
+    "'vendor X'). Return daftar {name, section, summary, snippet}. Baca isi lengkap via "
+    "get_wiki_page(name). Beda dari list_temuan_patterns (pattern terkurasi) — ini jangkauan luas.",
+    {"query": str, "limit": int},
+)
+async def search_wiki(args: dict) -> dict:
+    query = str(args.get("query", "")).strip()
+    if not query:
+        return {"content": [{"type": "text", "text": "FAILED|query kosong"}], "is_error": True}
+    try:
+        limit = int(args.get("limit", 12))
+    except (TypeError, ValueError):
+        limit = 12
+    res = vault_search(query, limit=limit)
+    return {"content": [{"type": "text", "text": json.dumps(res, ensure_ascii=False)}]}
+
+
+@tool(
+    "get_wiki_page",
+    "Baca isi LENGKAP satu catatan vault by name (mis. 'bpk-kinerja-pste-2024' atau "
+    "'direktorat-pengembangan-ekosistem-digital'). Pakai SETELAH search_wiki untuk "
+    "mendalami catatan yang relevan. Catatan vault memuat sitasi sumber (source: …) — "
+    "pakai untuk konteks, tetap verifikasi fakta penugasan saat ini.",
+    {"name": str},
+)
+async def get_wiki_page(args: dict) -> dict:
+    res = vault_get_page(str(args.get("name", "")))
+    if not res.get("found"):
+        return {"content": [{"type": "text", "text": f"NOT_FOUND|{res.get('message', '')}"}]}
+    return {"content": [{"type": "text", "text": json.dumps(res, ensure_ascii=False)}]}
+
+
+WIKI_TOOLS = [
+    list_temuan_patterns,
+    get_temuan_pattern,
+    list_konteks,
+    get_konteks,
+    search_wiki,
+    get_wiki_page,
+]

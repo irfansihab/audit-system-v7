@@ -178,7 +178,7 @@ async def _dokumen_status_map(db: AsyncSession, penugasan_ids: list[int]) -> dic
 
 def _with_derived_status(p: Penugasan, dok_statuses: list[str]) -> PenugasanOut:
     out = PenugasanOut.model_validate(p)
-    out.status = compute_penugasan_status(Path(p.folder_path), dok_statuses)
+    out.status = compute_penugasan_status(Path(p.folder_path), dok_statuses, stored_status=p.status)
     return out
 
 

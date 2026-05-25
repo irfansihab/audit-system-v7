@@ -1,0 +1,354 @@
+"""Routes CACM / EWS SIRUP — C1a (ingest offline) + usulan penugasan.
+
+Menerima hasil evaluasi EWS SIRUP dari agent tim (folder CACM/ews-system-delivery).
+Untuk C1a, intake lewat file/sample (POST /cacm/ingest, /ingest-sample). C1b nanti
+menambah webhook HMAC + pull REST. Finding MERAH/KUNING bisa dipromosikan PT menjadi
+Penugasan berstatus USULAN_CACM (prefilled konteks dari finding).
+
+Format hasil EWS (lihat CACM/.../sample-ews-hasil.json): LIST berisi item rekap
+(`{"rekap": {...}}`, 1 per satker) + item finding (punya `kode`, `status`,
+MERAH→judul+penjelasan, KUNING/INFO→ringkasan).
+"""
+import json
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+from fastapi import APIRouter, Body, Depends, HTTPException, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.auth import get_current_user
+from app.database import get_db
+from app.models import CacmRun, EwsFinding, Penugasan, PenugasanStatus, Role, Skill, User
+from app.routes.penugasan import _scaffold_penugasan_files
+from app.schemas import PenugasanCreate
+from app.storage import gen_kode_penugasan, penugasan_folder
+
+router = APIRouter(prefix="/cacm", tags=["cacm"])
+
+_FIXTURE = Path(__file__).resolve().parent.parent / "fixtures" / "cacm-sample-ews-hasil.json"
+_PROMOTABLE = {"MERAH", "KUNING"}
+
+
+def _require_pt(role: Role) -> None:
+    if role != Role.PT:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            f"Hanya Pengendali Teknis (PT) yang boleh aksi ini. Role Anda: {role.value}.",
+        )
+
+
+def _normalize(payload: Any) -> tuple[list[dict], list[dict], dict]:
+    """Pisahkan (findings, rekap_rows, meta) dari berbagai bentuk payload EWS."""
+    meta: dict = {}
+    items: list = []
+    rekap_rows: list[dict] = []
+
+    if isinstance(payload, list):
+        items = payload
+    elif isinstance(payload, dict):
+        meta = payload.get("meta", {}) if isinstance(payload.get("meta"), dict) else {}
+        items = payload.get("hasil") or payload.get("findings") or []
+        # rekap bisa terpisah: {meta, rekap:[...]} atau list langsung
+        rk = payload.get("rekap")
+        if isinstance(rk, dict) and isinstance(rk.get("rekap"), list):
+            rekap_rows = rk["rekap"]
+        elif isinstance(rk, list):
+            rekap_rows = rk
+
+    findings: list[dict] = []
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        if "rekap" in it and isinstance(it["rekap"], dict):
+            rekap_rows.append(it["rekap"])
+        elif it.get("kode"):
+            findings.append(it)
+    return findings, rekap_rows, meta
+
+
+def _to_int(v: Any) -> int:
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return 0
+
+
+async def _ingest(db: AsyncSession, payload: Any, source: str) -> CacmRun:
+    findings, rekap_rows, meta = _normalize(payload)
+    if not findings:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Tidak ada finding (item dengan 'kode') di payload EWS.",
+        )
+
+    counts = {"total": len(findings), "merah": 0, "kuning": 0, "hijau": 0, "info": 0}
+    for f in findings:
+        st = str(f.get("status", "")).upper()
+        key = {"MERAH": "merah", "KUNING": "kuning", "HIJAU": "hijau", "INFO": "info"}.get(st)
+        if key:
+            counts[key] += 1
+
+    run_id = str(
+        meta.get("run_id")
+        or meta.get("runId")
+        or f"offline-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
+    )
+    # Jaga unik
+    if (await db.execute(select(CacmRun).where(CacmRun.run_id == run_id))).scalar_one_or_none():
+        run_id = f"{run_id}-{datetime.utcnow().strftime('%H%M%S%f')}"
+
+    run = CacmRun(
+        run_id=run_id,
+        source=source,
+        tanggal_evaluasi=meta.get("tanggal_evaluasi"),
+        periode_crawl=meta.get("periode_crawl"),
+        periode_crawl_sebelumnya=meta.get("periode_crawl_sebelumnya"),
+        summary=counts,
+        rekap=rekap_rows,
+    )
+    db.add(run)
+    await db.flush()
+
+    for f in findings:
+        db.add(EwsFinding(
+            cacm_run_id=run.id,
+            kode=str(f.get("kode", ""))[:20],
+            satker=str(f.get("satker", ""))[:200],
+            satker_kode=(str(f.get("satker_kode")) if f.get("satker_kode") else None),
+            status=str(f.get("status", ""))[:20],
+            judul=f.get("judul"),
+            penjelasan=f.get("penjelasan"),
+            ringkasan=f.get("ringkasan"),
+            nilai_aktual=f.get("nilai_aktual"),
+            jumlah_paket_terdampak=_to_int(f.get("jumlah_paket_terdampak")),
+            total_nilai_terdampak=_to_int(f.get("total_nilai_terdampak")),
+            threshold=f.get("threshold"),
+            regulasi=f.get("regulasi"),
+            rekomendasi=f.get("rekomendasi"),
+            paket_detail=f.get("paket_detail") if isinstance(f.get("paket_detail"), list) else [],
+        ))
+
+    await db.commit()
+    await db.refresh(run)
+    return run
+
+
+def _run_summary_dict(run: CacmRun, n_findings: int) -> dict:
+    return {
+        "id": run.id,
+        "run_id": run.run_id,
+        "source": run.source,
+        "tanggal_evaluasi": run.tanggal_evaluasi,
+        "periode_crawl": run.periode_crawl,
+        "summary": run.summary or {},
+        "total_findings": n_findings,
+        "received_at": run.received_at.isoformat() if run.received_at else None,
+    }
+
+
+@router.post("/ingest", status_code=status.HTTP_201_CREATED)
+async def ingest_ews(
+    payload: Any = Body(...),
+    current: tuple[User, Role] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Ingest hasil EWS SIRUP (isi sample-ews-hasil.json: list rekap+findings)."""
+    user, role = current
+    _require_pt(role)
+    run = await _ingest(db, payload, source="offline")
+    return {"ok": True, **_run_summary_dict(run, run.summary.get("total", 0))}
+
+
+@router.post("/ingest-sample", status_code=status.HTTP_201_CREATED)
+async def ingest_sample(
+    current: tuple[User, Role] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Ingest fixture contoh (untuk demo C1a tanpa deploy agent)."""
+    user, role = current
+    _require_pt(role)
+    if not _FIXTURE.exists():
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Fixture tidak ada: {_FIXTURE.name}")
+    payload = json.loads(_FIXTURE.read_text(encoding="utf-8"))
+    run = await _ingest(db, payload, source="offline")
+    return {"ok": True, "sample": True, **_run_summary_dict(run, run.summary.get("total", 0))}
+
+
+@router.get("/runs")
+async def list_runs(
+    current: tuple[User, Role] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    rows = (
+        await db.execute(select(CacmRun).order_by(CacmRun.received_at.desc()))
+    ).scalars().all()
+    out = []
+    for r in rows:
+        n = len(
+            (await db.execute(select(EwsFinding).where(EwsFinding.cacm_run_id == r.id)))
+            .scalars().all()
+        )
+        out.append(_run_summary_dict(r, n))
+    return {"total": len(out), "runs": out}
+
+
+@router.get("/runs/{run_id}")
+async def get_run(
+    run_id: int,
+    current: tuple[User, Role] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    run = (await db.execute(select(CacmRun).where(CacmRun.id == run_id))).scalar_one_or_none()
+    if not run:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Run tidak ditemukan")
+    findings = (
+        await db.execute(
+            select(EwsFinding).where(EwsFinding.cacm_run_id == run.id).order_by(EwsFinding.id)
+        )
+    ).scalars().all()
+    return {
+        **_run_summary_dict(run, len(findings)),
+        "rekap": run.rekap or [],
+        "findings": [
+            {
+                "id": f.id,
+                "kode": f.kode,
+                "satker": f.satker,
+                "satker_kode": f.satker_kode,
+                "status": f.status,
+                "judul": f.judul,
+                "penjelasan": f.penjelasan,
+                "ringkasan": f.ringkasan,
+                "nilai_aktual": f.nilai_aktual,
+                "jumlah_paket_terdampak": f.jumlah_paket_terdampak,
+                "total_nilai_terdampak": f.total_nilai_terdampak,
+                "threshold": f.threshold,
+                "regulasi": f.regulasi,
+                "rekomendasi": f.rekomendasi,
+                "paket_detail": f.paket_detail or [],
+                "tindak_lanjut": f.tindak_lanjut,
+                "penugasan_id": f.penugasan_id,
+                "promotable": f.status.upper() in _PROMOTABLE,
+            }
+            for f in findings
+        ],
+    }
+
+
+@router.post("/findings/{finding_id}/promote", status_code=status.HTTP_201_CREATED)
+async def promote_finding(
+    finding_id: int,
+    current: tuple[User, Role] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Jadikan finding EWS sebagai Penugasan baru (status USULAN_CACM, prefilled)."""
+    user, role = current
+    _require_pt(role)
+
+    f = (await db.execute(select(EwsFinding).where(EwsFinding.id == finding_id))).scalar_one_or_none()
+    if not f:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Finding tidak ditemukan")
+    if f.tindak_lanjut == "DIPROMOSIKAN" and f.penugasan_id:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"Finding sudah dipromosikan jadi penugasan #{f.penugasan_id}.",
+        )
+    if f.status.upper() not in _PROMOTABLE:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Status {f.status} tidak dapat dipromosikan (hanya MERAH/KUNING).",
+        )
+
+    judul_singkat = (f.judul or f.ringkasan or f.kode)[:120]
+    obyek = f"Reviu Pengadaan {f.satker} — {f.kode}: {judul_singkat}"[:400]
+
+    kode_pen = gen_kode_penugasan("reviu-pengadaan")
+    folder = penugasan_folder(kode_pen)
+    payload = PenugasanCreate(obyek=obyek, skill=Skill.REVIU_PENGADAAN, nomor_st=None, tanggal_st=None)
+    _scaffold_penugasan_files(folder=folder, kode=kode_pen, payload=payload, ketua_tim_name=None)
+
+    # Sisipkan konteks sinyal EWS ke context.md (di bawah scaffold) supaya AT/KT punya latar.
+    paket_lines = "\n".join(
+        f"  - {p.get('nama') or p.get('nama_paket','')} — Rp {(_to_int(p.get('pagu'))):,} "
+        f"({p.get('metode','')}, {p.get('jenis','')})"
+        for p in (f.paket_detail or [])[:15]
+    )
+    ews_section = (
+        f"\n\n## Sinyal CACM / EWS SIRUP (sumber usulan penugasan)\n\n"
+        f"- Kode EWS: {f.kode} ({f.status})\n"
+        f"- Satker: {f.satker}\n"
+        f"- Nilai aktual: {f.nilai_aktual or '-'}\n"
+        f"- Paket terdampak: {f.jumlah_paket_terdampak} | Total nilai: Rp {f.total_nilai_terdampak:,}\n"
+        f"- Threshold: {f.threshold or '-'}\n"
+        f"- Regulasi: {f.regulasi or '-'}\n"
+        f"- Rekomendasi awal EWS: {f.rekomendasi or '-'}\n\n"
+        f"Penjelasan:\n{f.penjelasan or f.ringkasan or '-'}\n"
+        + (f"\nPaket terdampak:\n{paket_lines}\n" if paket_lines else "")
+        + "\n> Sumber: SIRUP (data RUP/perencanaan). HPS/pemenang/kontrak ada di SPSE — verifikasi lanjutan.\n"
+    )
+    ctx_path = folder / "context.md"
+    try:
+        existing = ctx_path.read_text(encoding="utf-8") if ctx_path.exists() else ""
+        ctx_path.write_text(existing + ews_section, encoding="utf-8")
+    except OSError:
+        pass
+
+    p = Penugasan(
+        kode=kode_pen,
+        obyek=obyek,
+        skill=Skill.REVIU_PENGADAAN,
+        nomor_st=None,
+        tanggal_st=None,
+        status=PenugasanStatus.USULAN_CACM,
+        ketua_tim_id=None,
+        folder_path=str(folder),
+    )
+    db.add(p)
+    await db.flush()
+
+    f.tindak_lanjut = "DIPROMOSIKAN"
+    f.penugasan_id = p.id
+    await db.commit()
+
+    return {"ok": True, "penugasan_id": p.id, "kode": kode_pen, "obyek": obyek}
+
+
+@router.post("/findings/{finding_id}/dismiss")
+async def dismiss_finding(
+    finding_id: int,
+    current: tuple[User, Role] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    user, role = current
+    _require_pt(role)
+    f = (await db.execute(select(EwsFinding).where(EwsFinding.id == finding_id))).scalar_one_or_none()
+    if not f:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Finding tidak ditemukan")
+    f.tindak_lanjut = "DIABAIKAN"
+    await db.commit()
+    return {"ok": True, "finding_id": finding_id, "tindak_lanjut": "DIABAIKAN"}
+
+
+@router.post("/usulan/{penugasan_id}/accept")
+async def accept_usulan(
+    penugasan_id: int,
+    current: tuple[User, Role] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Terima usulan CACM → ubah status penugasan dari USULAN_CACM ke DRAFT
+    sehingga masuk alur penugasan normal (KT setup, AT upload, dst)."""
+    user, role = current
+    _require_pt(role)
+    p = (await db.execute(select(Penugasan).where(Penugasan.id == penugasan_id))).scalar_one_or_none()
+    if not p:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Penugasan tidak ditemukan")
+    if p.status != PenugasanStatus.USULAN_CACM:
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            f"Penugasan bukan usulan CACM (status: {p.status}).",
+        )
+    p.status = PenugasanStatus.DRAFT
+    await db.commit()
+    return {"ok": True, "penugasan_id": penugasan_id, "status": "DRAFT"}

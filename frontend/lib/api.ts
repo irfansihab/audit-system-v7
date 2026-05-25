@@ -316,6 +316,110 @@ runAgent: (
       { method: 'PUT', body: JSON.stringify({ content }) }
     ),
 
+  // ===== Knowledge / Wiki vault (W1 — baca vault pengetahuan) =====
+
+  /** Cari catatan di vault pengetahuan organisasi (read-only). */
+  searchWiki: (q: string, limit = 12) =>
+    request<{
+      configured: boolean;
+      total: number;
+      message?: string;
+      results: Array<{
+        name: string;
+        section: string;
+        summary: string;
+        path: string;
+        score: number;
+        snippet: string;
+      }>;
+    }>(`/knowledge/wiki/search?q=${encodeURIComponent(q)}&limit=${limit}`),
+
+  /** Baca isi lengkap satu catatan vault by name. */
+  getWikiPage: (name: string) =>
+    request<{
+      found: boolean;
+      configured: boolean;
+      message?: string;
+      name?: string;
+      path?: string;
+      content?: string;
+      truncated?: boolean;
+    }>(`/knowledge/wiki/page?name=${encodeURIComponent(name)}`),
+
+  // ===== CACM / EWS SIRUP (C1a — ingest offline + usulan penugasan) =====
+
+  /** Ingest fixture contoh hasil EWS (demo tanpa deploy agent). PT only. */
+  ingestCacmSample: () =>
+    request<{ ok: boolean; id: number; run_id: string; summary: Record<string, number> }>(
+      '/cacm/ingest-sample',
+      { method: 'POST' }
+    ),
+
+  /** Daftar run EWS yang sudah masuk. */
+  getCacmRuns: () =>
+    request<{
+      total: number;
+      runs: Array<{
+        id: number;
+        run_id: string;
+        source: string;
+        tanggal_evaluasi: string | null;
+        summary: Record<string, number>;
+        total_findings: number;
+        received_at: string | null;
+      }>;
+    }>('/cacm/runs'),
+
+  /** Detail 1 run: rekap + findings. */
+  getCacmRun: (id: number) =>
+    request<{
+      id: number;
+      run_id: string;
+      summary: Record<string, number>;
+      rekap: Array<Record<string, any>>;
+      findings: Array<{
+        id: number;
+        kode: string;
+        satker: string;
+        satker_kode: string | null;
+        status: string;
+        judul: string | null;
+        penjelasan: string | null;
+        ringkasan: string | null;
+        nilai_aktual: string | null;
+        jumlah_paket_terdampak: number;
+        total_nilai_terdampak: number;
+        threshold: string | null;
+        regulasi: string | null;
+        rekomendasi: string | null;
+        paket_detail: Array<Record<string, any>>;
+        tindak_lanjut: string;
+        penugasan_id: number | null;
+        promotable: boolean;
+      }>;
+    }>(`/cacm/runs/${id}`),
+
+  /** Jadikan finding usulan penugasan (status USULAN_CACM). PT only. */
+  promoteFinding: (findingId: number) =>
+    request<{ ok: boolean; penugasan_id: number; kode: string; obyek: string }>(
+      `/cacm/findings/${findingId}/promote`,
+      { method: 'POST' }
+    ),
+
+  /** Abaikan finding. PT only. */
+  dismissFinding: (findingId: number) =>
+    request<{ ok: boolean; finding_id: number; tindak_lanjut: string }>(
+      `/cacm/findings/${findingId}/dismiss`,
+      { method: 'POST' }
+    ),
+
+  /** Terima usulan CACM → penugasan jadi DRAFT (masuk alur normal). PT only. */
+  acceptUsulan: (penugasanId: number) =>
+    request<{ ok: boolean; penugasan_id: number; status: string }>(
+      `/cacm/usulan/${penugasanId}/accept`,
+      { method: 'POST' }
+    ),
+
   // ===== Feedback Aggregate Dashboard (Phase 2) =====
 
   /** Ringkasan agregat feedback agen cross-penugasan untuk N hari ke belakang. */

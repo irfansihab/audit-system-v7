@@ -1,0 +1,492 @@
+[
+  {
+    "rekap": {
+      "satker": "Inspektorat Jenderal",
+      "penyedia_paket": 4,
+      "penyedia_pagu_juta": 3977,
+      "swakelola_paket": 25,
+      "swakelola_pagu_juta": 6164,
+      "total_paket": 110,
+      "total_pagu_juta": 19553
+    }
+  },
+  {
+    "rekap": {
+      "satker": "Direktorat Jenderal Ekosistem Digital",
+      "penyedia_paket": 102,
+      "penyedia_pagu_juta": 107878,
+      "swakelola_paket": 368,
+      "swakelola_pagu_juta": 311761,
+      "total_paket": 536,
+      "total_pagu_juta": 513491
+    }
+  },
+  {
+    "rekap": {
+      "satker": "Direktorat Jenderal Pengawasan Ruang Digital",
+      "penyedia_paket": 203,
+      "penyedia_pagu_juta": 411850,
+      "swakelola_paket": 9,
+      "swakelola_pagu_juta": 1584,
+      "total_paket": 212,
+      "total_pagu_juta": 413434
+    }
+  },
+  {
+    "kode": "EWS-01",
+    "satker": "INSPEKTORAT JENDERAL",
+    "satker_kode": "itjen",
+    "status": "MERAH",
+    "judul": "pengadaan dengan metode Pengadaan Langsung yang melampaui batas nilai yang diperkenankan",
+    "penjelasan": "Atas pagu pengadaan inspektorat jenderal yang dipantau melalui SIRUP, Inspektorat II menemukan 13 (13) paket dengan metode Pengadaan Langsung yang melampaui threshold nilai yang ditetapkan dalam Perpres 16/2018 Pasal 38. Total nilai paket yang tidak sesuai sebesar Rp6.777.522.000,00.",
+    "nilai_aktual": "13 paket PL melebihi threshold, total Rp6.777.522.000",
+    "jumlah_paket_terdampak": 13,
+    "total_nilai_terdampak": 6777522000,
+    "threshold": "Rp200 juta (Barang/Jasa Lainnya/Konstruksi); Rp100 juta (Konsultansi)",
+    "regulasi": "Perpres 16/2018 Pasal 38 ayat (2) dan (3)",
+    "rekomendasi": "Melakukan evaluasi terhadap 13 paket Pengadaan Langsung pada inspektorat jenderal yang melampaui batas nilai dan memberikan justifikasi yang dapat dipertanggungjawabkan atau mengubah metode pengadaan menjadi Tender/Seleksi.",
+    "paket_detail": [
+      {
+        "nama_paket": "Seragam operasional - Layanan Operasional Kantor",
+        "pagu": 292248000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Barang"
+      },
+      {
+        "nama_paket": "Belanja Bahan - Pengelolaan Pengawasan Program Kerja Mitra Inspektorat I",
+        "pagu": 210959000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Barang"
+      },
+      {
+        "nama_paket": "Belanja Bahan - Pengelolaan Pengawasan Program Kerja Mitra Inspektorat IV",
+        "pagu": 215910000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Barang"
+      },
+      {
+        "nama_paket": "Pemeliharaan Peralatan Kantor",
+        "pagu": 710672000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Barang"
+      },
+      {
+        "nama_paket": "Makanan Penambah Daya Tahan Tubuh",
+        "pagu": 902880000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Barang"
+      },
+      {
+        "nama_paket": "Pemeliharaan dan Operasional Kendaraan Dinas",
+        "pagu": 621400000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Barang"
+      },
+      {
+        "nama_paket": "Biaya Penyedia Jasa Lainnya Perorangan (PJLP)",
+        "pagu": 1950000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Lainnya"
+      },
+      {
+        "nama_paket": "Biaya Rapat Pimpinan - Layanan Operasional Kantor",
+        "pagu": 388800000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Barang"
+      },
+      {
+        "nama_paket": "Belanja Barang Operasional Lainnya - Layanan Operasional Kantor",
+        "pagu": 364684000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Lainnya"
+      },
+      {
+        "nama_paket": "Biaya Langganan koran/majalah, air minum - Layanan Operasional Kantor",
+        "pagu": 362000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Barang"
+      }
+    ],
+    "tabel_headers": [
+      "Nama Paket",
+      "Pagu",
+      "Metode",
+      "Jenis Pengadaan"
+    ],
+    "tabel_widths": [
+      3800,
+      1800,
+      1800,
+      1600
+    ]
+  },
+  {
+    "kode": "EWS-01",
+    "satker": "INSPEKTORAT JENDERAL",
+    "satker_kode": "itjen",
+    "status": "KUNING",
+    "ringkasan": "1 paket Pengadaan Langsung mendekati threshold (>75% dari batas), total Rp155.868.000",
+    "rekomendasi": "Memantau pelaksanaan 1 paket PL pada inspektorat jenderal yang nilainya mendekati batas Pengadaan Langsung, untuk memastikan pengadaan tetap sesuai ketentuan."
+  },
+  {
+    "kode": "EWS-01",
+    "satker": "DIREKTORAT JENDERAL EKOSISTEM DIGITAL",
+    "satker_kode": "ekosdig",
+    "status": "MERAH",
+    "judul": "pengadaan dengan metode Pengadaan Langsung yang melampaui batas nilai yang diperkenankan",
+    "penjelasan": "Atas pagu pengadaan direktorat jenderal ekosistem digital yang dipantau melalui SIRUP, Inspektorat II menemukan 15 (15) paket dengan metode Pengadaan Langsung yang melampaui threshold nilai yang ditetapkan dalam Perpres 16/2018 Pasal 38. Total nilai paket yang tidak sesuai sebesar Rp8.501.150.000,00.",
+    "nilai_aktual": "15 paket PL melebihi threshold, total Rp8.501.150.000",
+    "jumlah_paket_terdampak": 15,
+    "total_nilai_terdampak": 8501150000,
+    "threshold": "Rp200 juta (Barang/Jasa Lainnya/Konstruksi); Rp100 juta (Konsultansi)",
+    "regulasi": "Perpres 16/2018 Pasal 38 ayat (2) dan (3)",
+    "rekomendasi": "Melakukan evaluasi terhadap 15 paket Pengadaan Langsung pada direktorat jenderal ekosistem digital yang melampaui batas nilai dan memberikan justifikasi yang dapat dipertanggungjawabkan atau mengubah metode pengadaan menjadi Tender/Seleksi.",
+    "paket_detail": [
+      {
+        "nama_paket": "Jasa Konsultan Pemetaan Wilayah Simulcast Jasa Penyiaran Radio",
+        "pagu": 140000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Konsultansi"
+      },
+      {
+        "nama_paket": "Jasa Konsultan Perhitungan Tarif Sewa Multipleksing DAB",
+        "pagu": 140000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Konsultansi"
+      },
+      {
+        "nama_paket": "Project Manager Officer Program Kerja Direktorat Pos dan Penyiaran",
+        "pagu": 200000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Konsultansi"
+      },
+      {
+        "nama_paket": "Finalisasi Petunjuk Teknis Tata Cara Verifikasi Penyelesaian Permohonan Keringanan Penerimaan Negara Bukan Pajak (PNBP) Biaya Hak Penyelengaraan (BHP) Telekomunikasi Dan Kontribusi Penyelenggara Layanan Pos Universal (KPLPU)",
+        "pagu": 200000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Konsultansi"
+      },
+      {
+        "nama_paket": "Jasa Konsultan Startup Compliance dan Financial Model",
+        "pagu": 4294000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Konsultansi"
+      },
+      {
+        "nama_paket": "Business Matchmaking Startup Digital",
+        "pagu": 600000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Konsultansi"
+      },
+      {
+        "nama_paket": "Belanja Jasa Konsultan",
+        "pagu": 400000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Konsultansi"
+      },
+      {
+        "nama_paket": "Jasa Konsultan untuk Pengembangan Ekosistem Startup Digital",
+        "pagu": 440000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Konsultansi"
+      },
+      {
+        "nama_paket": "Jasa Konsultan Penyusunan Naskah Akademik RUU Pos dan Logistik",
+        "pagu": 200000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Konsultansi"
+      },
+      {
+        "nama_paket": "Jasa Konsultan untuk Penguatan Kompetesi Startup",
+        "pagu": 300000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Konsultansi"
+      }
+    ],
+    "tabel_headers": [
+      "Nama Paket",
+      "Pagu",
+      "Metode",
+      "Jenis Pengadaan"
+    ],
+    "tabel_widths": [
+      3800,
+      1800,
+      1800,
+      1600
+    ]
+  },
+  {
+    "kode": "EWS-01",
+    "satker": "DIREKTORAT JENDERAL EKOSISTEM DIGITAL",
+    "satker_kode": "ekosdig",
+    "status": "KUNING",
+    "ringkasan": "37 paket Pengadaan Langsung mendekati threshold (>75% dari batas), total Rp4.928.156.000",
+    "rekomendasi": "Memantau pelaksanaan 37 paket PL pada direktorat jenderal ekosistem digital yang nilainya mendekati batas Pengadaan Langsung, untuk memastikan pengadaan tetap sesuai ketentuan."
+  },
+  {
+    "kode": "EWS-01",
+    "satker": "DIREKTORAT JENDERAL PENGAWASAN RUANG DIGITAL",
+    "satker_kode": "wasdig",
+    "status": "MERAH",
+    "judul": "pengadaan dengan metode Pengadaan Langsung yang melampaui batas nilai yang diperkenankan",
+    "penjelasan": "Atas pagu pengadaan direktorat jenderal pengawasan ruang digital yang dipantau melalui SIRUP, Inspektorat II menemukan 28 (28) paket dengan metode Pengadaan Langsung yang melampaui threshold nilai yang ditetapkan dalam Perpres 16/2018 Pasal 38. Total nilai paket yang tidak sesuai sebesar Rp28.644.943.706,00.",
+    "nilai_aktual": "28 paket PL melebihi threshold, total Rp28.644.943.706",
+    "jumlah_paket_terdampak": 28,
+    "total_nilai_terdampak": 28644943706,
+    "threshold": "Rp200 juta (Barang/Jasa Lainnya/Konstruksi); Rp100 juta (Konsultansi)",
+    "regulasi": "Perpres 16/2018 Pasal 38 ayat (2) dan (3)",
+    "rekomendasi": "Melakukan evaluasi terhadap 28 paket Pengadaan Langsung pada direktorat jenderal pengawasan ruang digital yang melampaui batas nilai dan memberikan justifikasi yang dapat dipertanggungjawabkan atau mengubah metode pengadaan menjadi Tender/Seleksi.",
+    "paket_detail": [
+      {
+        "nama_paket": "Arsitektur Ruang Digital Nasional",
+        "pagu": 300000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Barang"
+      },
+      {
+        "nama_paket": "Pengadaan PJLP dan Tenaga Kontrak Mei s.d Desember 2026",
+        "pagu": 3882462472,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Lainnya"
+      },
+      {
+        "nama_paket": "18 Tenaga Kontrak Analis Data Bulan Maret s.d. Desember 2026",
+        "pagu": 1530000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Lainnya"
+      },
+      {
+        "nama_paket": "18 Tenaga Kontrak Analis Data Bulan Januari dan Februari 2026",
+        "pagu": 306000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Lainnya"
+      },
+      {
+        "nama_paket": "Penggandaan dan Konsumsi Rapat",
+        "pagu": 812280000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Barang"
+      },
+      {
+        "nama_paket": "Pemeliharaan Peralatan Kantor",
+        "pagu": 720000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Barang"
+      },
+      {
+        "nama_paket": "Pertemuan Jamuan Delegasi/misi/tamu Eselon III",
+        "pagu": 222000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Barang"
+      },
+      {
+        "nama_paket": "3 Tenaga Kontrak Senior Administrasi Keuangan Bulan Maret s.d. Desember 2026",
+        "pagu": 225000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Lainnya"
+      },
+      {
+        "nama_paket": "4 Tenaga Kontrak Junior Analis Data/Verifikator Lead (Penempatan Yogyakarta Eksisting) Bulan Maret s.d. Desember 2026",
+        "pagu": 300000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Lainnya"
+      },
+      {
+        "nama_paket": "3 Tenaga Kontrak Junior Administrator Jaringan dan Security Operation Center Bulan Maret s.d. Desember 2026",
+        "pagu": 356400000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Lainnya"
+      }
+    ],
+    "tabel_headers": [
+      "Nama Paket",
+      "Pagu",
+      "Metode",
+      "Jenis Pengadaan"
+    ],
+    "tabel_widths": [
+      3800,
+      1800,
+      1800,
+      1600
+    ]
+  },
+  {
+    "kode": "EWS-01",
+    "satker": "DIREKTORAT JENDERAL PENGAWASAN RUANG DIGITAL",
+    "satker_kode": "wasdig",
+    "status": "KUNING",
+    "ringkasan": "19 paket Pengadaan Langsung mendekati threshold (>75% dari batas), total Rp2.705.586.000",
+    "rekomendasi": "Memantau pelaksanaan 19 paket PL pada direktorat jenderal pengawasan ruang digital yang nilainya mendekati batas Pengadaan Langsung, untuk memastikan pengadaan tetap sesuai ketentuan."
+  },
+  {
+    "kode": "EWS-02",
+    "satker": "DIREKTORAT JENDERAL EKOSISTEM DIGITAL",
+    "satker_kode": "ekosdig",
+    "status": "KUNING",
+    "ringkasan": "1 paket Penunjukan Langsung bernilai Rp500 juta s.d. Rp1 miliar, total Rp519.600.000, perlu klarifikasi"
+  },
+  {
+    "kode": "EWS-03",
+    "satker": "DIREKTORAT JENDERAL PENGAWASAN RUANG DIGITAL",
+    "satker_kode": "wasdig",
+    "status": "KUNING",
+    "ringkasan": "rasio Produk Dalam Negeri sebesar 42.25% (di atas ambang minimum 40% Inpres 2/2022 namun belum mencapai 60%, perlu dipantau)"
+  },
+  {
+    "kode": "EWS-04",
+    "satker": "DIREKTORAT JENDERAL EKOSISTEM DIGITAL",
+    "satker_kode": "ekosdig",
+    "status": "KUNING",
+    "ringkasan": "rasio rencana pemilihan November-Desember sebesar 25.91% (di atas ambang 25%)"
+  },
+  {
+    "kode": "EWS-05",
+    "satker": "DIREKTORAT JENDERAL EKOSISTEM DIGITAL",
+    "satker_kode": "ekosdig",
+    "status": "KUNING",
+    "ringkasan": "22 paket bernilai ≤ Rp15 M tidak di-flag sebagai Usaha Kecil/Koperasi (rasio nilai UKM keseluruhan 66.09%)",
+    "rekomendasi": "Mereviu pengaturan UKM atas 22 paket bernilai di bawah Rp15 miliar pada direktorat jenderal ekosistem digital agar diprioritaskan untuk Usaha Kecil/Koperasi sesuai Perpres 16/2018 Pasal 65-66."
+  },
+  {
+    "kode": "EWS-05",
+    "satker": "DIREKTORAT JENDERAL PENGAWASAN RUANG DIGITAL",
+    "satker_kode": "wasdig",
+    "status": "KUNING",
+    "ringkasan": "13 paket bernilai ≤ Rp15 M tidak di-flag sebagai Usaha Kecil/Koperasi (rasio nilai UKM keseluruhan 15.84%)",
+    "rekomendasi": "Mereviu pengaturan UKM atas 13 paket bernilai di bawah Rp15 miliar pada direktorat jenderal pengawasan ruang digital agar diprioritaskan untuk Usaha Kecil/Koperasi sesuai Perpres 16/2018 Pasal 65-66."
+  },
+  {
+    "kode": "EWS-06",
+    "satker": "DIREKTORAT JENDERAL EKOSISTEM DIGITAL",
+    "satker_kode": "ekosdig",
+    "status": "INFO",
+    "ringkasan": "15 paket baru terdeteksi sejak crawl sebelumnya senilai total Rp8.509.150.000"
+  },
+  {
+    "kode": "EWS-06",
+    "satker": "DIREKTORAT JENDERAL PENGAWASAN RUANG DIGITAL",
+    "satker_kode": "wasdig",
+    "status": "MERAH",
+    "judul": "paket baru yang langsung memicu indikasi pelanggaran ambang nilai",
+    "penjelasan": "Sejak crawl sebelumnya, direktorat jenderal pengawasan ruang digital memunculkan 25 paket baru, di antaranya 6 paket langsung memicu indikasi EWS-01/EWS-02 (nilai melampaui ambang metode non-kompetitif).",
+    "nilai_aktual": "25 paket baru, 6 berisiko, total Rp11.778.969.316",
+    "jumlah_paket_terdampak": 6,
+    "total_nilai_terdampak": 9109118298,
+    "regulasi": "Perpres 16/2018 Pasal 38 / Pasal 42",
+    "rekomendasi": "Menelaah 6 paket baru berisiko pada direktorat jenderal pengawasan ruang digital sebelum proses pengadaan berlanjut.",
+    "paket_detail": [
+      {
+        "nama_paket": "Pengadaan PJLP dan Tenaga Kontrak Mei s.d Desember 2026",
+        "pagu": 3882462472,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Lainnya"
+      },
+      {
+        "nama_paket": "3 Tenaga Kontrak Senior Administrasi Keuangan Bulan Maret s.d. Desember 2026",
+        "pagu": 225000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Lainnya"
+      },
+      {
+        "nama_paket": "4 Tenaga Kontrak Junior Analis Data/Verifikator Lead (Penempatan Yogyakarta Eksisting) Bulan Maret s.d. Desember 2026",
+        "pagu": 300000000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Lainnya"
+      },
+      {
+        "nama_paket": "3 Tenaga Kontrak Junior Administrator Jaringan dan Security Operation Center Bulan Maret s.d. Desember 2026",
+        "pagu": 356400000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Lainnya"
+      },
+      {
+        "nama_paket": "Publikasi Pengawasan Ruang Digital",
+        "pagu": 3418700000,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Lainnya"
+      },
+      {
+        "nama_paket": "14 Tenaga Kontrak Junior Analis Data (Penempatan Yogyakarta) 25 Februari s.d Desember 2026",
+        "pagu": 926555826,
+        "metode": "Pengadaan Langsung",
+        "jenis": "Jasa Lainnya"
+      }
+    ],
+    "tabel_headers": [
+      "Nama Paket",
+      "Pagu",
+      "Metode",
+      "Jenis Pengadaan"
+    ],
+    "tabel_widths": [
+      3800,
+      1800,
+      1800,
+      1600
+    ]
+  },
+  {
+    "kode": "EWS-07",
+    "satker": "INSPEKTORAT JENDERAL",
+    "satker_kode": "itjen",
+    "status": "MERAH",
+    "judul": "konsentrasi penggunaan metode non-kompetitif yang melampaui ambang kewajaran",
+    "penjelasan": "Persentase nilai pagu metode non-kompetitif (Pengadaan Langsung, Penunjukan Langsung, Dikecualikan) pada inspektorat jenderal mencapai 76.50% dari total pagu satker — melampaui ambang 50%. Hal ini berpotensi menurunkan prinsip bersaing sebagaimana diatur dalam Perpres 16/2018 Pasal 7.",
+    "nilai_aktual": "Rasio non-kompetitif 76.50%; total Rp8.855.777.000",
+    "regulasi": "Perpres 16/2018 Pasal 7",
+    "rekomendasi": "Mengevaluasi dasar pemilihan metode pengadaan pada inspektorat jenderal dan meningkatkan porsi metode kompetitif (Tender/Seleksi) sesuai prinsip bersaing."
+  },
+  {
+    "kode": "EWS-08",
+    "satker": "INSPEKTORAT JENDERAL",
+    "satker_kode": "itjen",
+    "status": "INFO",
+    "ringkasan": "total pagu inspektorat jenderal kenaikan 0.00% antar periode (Rp19.553.000.000 → Rp19.553.000.000)"
+  },
+  {
+    "kode": "EWS-08",
+    "satker": "DIREKTORAT JENDERAL EKOSISTEM DIGITAL",
+    "satker_kode": "ekosdig",
+    "status": "INFO",
+    "ringkasan": "total pagu direktorat jenderal ekosistem digital kenaikan 0.00% antar periode (Rp513.491.000.000 → Rp513.491.000.000)"
+  },
+  {
+    "kode": "EWS-08",
+    "satker": "DIREKTORAT JENDERAL PENGAWASAN RUANG DIGITAL",
+    "satker_kode": "wasdig",
+    "status": "INFO",
+    "ringkasan": "total pagu direktorat jenderal pengawasan ruang digital kenaikan 0.00% antar periode (Rp413.434.000.000 → Rp413.434.000.000)"
+  },
+  {
+    "kode": "EWS-09",
+    "satker": "INSPEKTORAT JENDERAL",
+    "satker_kode": "itjen",
+    "status": "KUNING",
+    "ringkasan": "6 pasangan paket dengan kesamaan nama tinggi terdeteksi (similarity ≥ 0,70 dan kombinasi pagu > Rp200 juta dengan PL) — berpotensi indikasi pemecahan paket, perlu reviu auditor",
+    "jumlah_paket_terdampak": 6,
+    "regulasi": "Perpres 16/2018 Pasal 23 ayat (4)",
+    "rekomendasi": "Melakukan reviu manual atas 6 pasangan paket pada inspektorat jenderal yang teridentifikasi mirip untuk memastikan tidak terjadi pemecahan paket sebagaimana dilarang dalam Perpres 16/2018 Pasal 23 ayat (4)."
+  },
+  {
+    "kode": "EWS-09",
+    "satker": "DIREKTORAT JENDERAL EKOSISTEM DIGITAL",
+    "satker_kode": "ekosdig",
+    "status": "KUNING",
+    "ringkasan": "12 pasangan paket dengan kesamaan nama tinggi terdeteksi (similarity ≥ 0,70 dan kombinasi pagu > Rp200 juta dengan PL) — berpotensi indikasi pemecahan paket, perlu reviu auditor",
+    "jumlah_paket_terdampak": 12,
+    "regulasi": "Perpres 16/2018 Pasal 23 ayat (4)",
+    "rekomendasi": "Melakukan reviu manual atas 12 pasangan paket pada direktorat jenderal ekosistem digital yang teridentifikasi mirip untuk memastikan tidak terjadi pemecahan paket sebagaimana dilarang dalam Perpres 16/2018 Pasal 23 ayat (4)."
+  },
+  {
+    "kode": "EWS-09",
+    "satker": "DIREKTORAT JENDERAL PENGAWASAN RUANG DIGITAL",
+    "satker_kode": "wasdig",
+    "status": "KUNING",
+    "ringkasan": "12 pasangan paket dengan kesamaan nama tinggi terdeteksi (similarity ≥ 0,70 dan kombinasi pagu > Rp200 juta dengan PL) — berpotensi indikasi pemecahan paket, perlu reviu auditor",
+    "jumlah_paket_terdampak": 12,
+    "regulasi": "Perpres 16/2018 Pasal 23 ayat (4)",
+    "rekomendasi": "Melakukan reviu manual atas 12 pasangan paket pada direktorat jenderal pengawasan ruang digital yang teridentifikasi mirip untuk memastikan tidak terjadi pemecahan paket sebagaimana dilarang dalam Perpres 16/2018 Pasal 23 ayat (4)."
+  }
+]

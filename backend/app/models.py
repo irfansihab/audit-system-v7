@@ -2,7 +2,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import JSON, DateTime, ForeignKey, String, Text
+from sqlalchemy import JSON, BigInteger, DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -21,6 +21,7 @@ class Skill(str, Enum):
 
 
 class PenugasanStatus(str, Enum):
+    USULAN_CACM = "USULAN_CACM"  # draft usulan dari sinyal EWS/CACM, belum diterima PT
     DRAFT = "DRAFT"
     INGESTING = "INGESTING"
     KKP_IN_PROGRESS = "KKP_IN_PROGRESS"
@@ -106,6 +107,57 @@ class DocumentCache(Base):
     ingested_json_path: Mapped[str] = mapped_column(String(600))
     extracted_by: Mapped[str] = mapped_column(String(40))  # "deterministic" | "haiku-fallback"
     extracted_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class CacmRun(Base):
+    """Satu periode hasil EWS SIRUP (dari agent tim) yang masuk ke v7.
+
+    Sumber: 'offline' (ingest file/sample), 'webhook' (push HMAC), 'pull' (REST).
+    """
+
+    __tablename__ = "cacm_runs"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    run_id: Mapped[str] = mapped_column(String(80), unique=True, index=True)
+    source: Mapped[str] = mapped_column(String(20), default="offline")
+    tanggal_evaluasi: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    periode_crawl: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    periode_crawl_sebelumnya: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    summary: Mapped[dict | None] = mapped_column(JSON, nullable=True)  # {total,merah,kuning,hijau,info}
+    rekap: Mapped[list | None] = mapped_column(JSON, nullable=True)    # list rekap per satker
+    received_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    findings: Mapped[list["EwsFinding"]] = relationship(
+        back_populates="run", cascade="all, delete-orphan"
+    )
+
+
+class EwsFinding(Base):
+    """Satu finding EWS (EWS-01..09) per satker dalam satu CacmRun."""
+
+    __tablename__ = "ews_findings"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    cacm_run_id: Mapped[int] = mapped_column(ForeignKey("cacm_runs.id"))
+    kode: Mapped[str] = mapped_column(String(20))            # "EWS-01".."EWS-09"
+    satker: Mapped[str] = mapped_column(String(200))
+    satker_kode: Mapped[str | None] = mapped_column(String(20), nullable=True)  # itjen/ekosdig/wasdig
+    status: Mapped[str] = mapped_column(String(20))          # MERAH/KUNING/HIJAU/INFO
+    judul: Mapped[str | None] = mapped_column(Text, nullable=True)
+    penjelasan: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ringkasan: Mapped[str | None] = mapped_column(Text, nullable=True)
+    nilai_aktual: Mapped[str | None] = mapped_column(Text, nullable=True)
+    jumlah_paket_terdampak: Mapped[int] = mapped_column(default=0)
+    total_nilai_terdampak: Mapped[int] = mapped_column(BigInteger, default=0)
+    threshold: Mapped[str | None] = mapped_column(Text, nullable=True)
+    regulasi: Mapped[str | None] = mapped_column(Text, nullable=True)
+    rekomendasi: Mapped[str | None] = mapped_column(Text, nullable=True)
+    paket_detail: Mapped[list | None] = mapped_column(JSON, nullable=True)
+    # BARU | DIPROMOSIKAN (jadi penugasan) | DIABAIKAN
+    tindak_lanjut: Mapped[str] = mapped_column(String(20), default="BARU")
+    penugasan_id: Mapped[int | None] = mapped_column(ForeignKey("penugasan.id"), nullable=True)
+
+    run: Mapped["CacmRun"] = relationship(back_populates="findings")
 
 
 class AgentRun(Base):

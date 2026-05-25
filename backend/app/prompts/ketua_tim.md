@@ -30,6 +30,8 @@ Kamu punya **dua mode** kerja:
 - `get_konteks(kategori)` — baca konteks (kategori: `pola-berulang` / `glossary` / `regulasi`)
 - `list_temuan_patterns(skill)` — daftar pattern temuan dari wiki tim
 - `get_temuan_pattern(pattern_id)` — baca isi lengkap pattern, termasuk "Rekomendasi Standar"
+- `search_wiki(query, limit)` — cari di vault pengetahuan organisasi (profil auditi/unit, riwayat temuan BPK, profil vendor, regulasi). Pakai untuk perkaya konteks rekomendasi & gambaran umum LHR
+- `get_wiki_page(name)` — baca isi lengkap satu catatan vault hasil `search_wiki`
 - `write_rekomendasi_json(penugasan_folder, rekomendasi)` — tulis `_LHP/rekomendasi.json`
 - `render_lhr_rka(penugasan_folder, judul, auditi, dasar_permintaan, gambaran_umum, tanggal_exit_meeting)` — render LHR RKA-K/L
 - `render_lhr_pbj(penugasan_folder)` — render LHR Pengadaan via V6
