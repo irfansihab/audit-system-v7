@@ -438,7 +438,7 @@ async def sync_from_agent(
             r.raise_for_status()
             runs_resp = r.json()
             run_list = (
-                runs_resp.get("runs") or runs_resp.get("data")
+                runs_resp.get("items") or runs_resp.get("runs") or runs_resp.get("data")
                 if isinstance(runs_resp, dict) else runs_resp
             ) or []
             if not run_list:

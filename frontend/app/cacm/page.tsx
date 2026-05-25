@@ -310,10 +310,19 @@ export default function CacmPage() {
 
                   {expanded === f.id && (
                     <div className="border-t border-gray-100 p-3 text-sm text-gray-700 space-y-2 bg-gray-50">
-                      {f.penjelasan && <p className="whitespace-pre-wrap">{f.penjelasan}</p>}
+                      {/* Narasi: MERAH punya `penjelasan`; KUNING/INFO pakai `ringkasan`. */}
+                      {(f.penjelasan || f.ringkasan) && (
+                        <p className="whitespace-pre-wrap">{f.penjelasan || f.ringkasan}</p>
+                      )}
                       <div className="grid sm:grid-cols-2 gap-x-6 gap-y-1 text-xs">
+                        {f.nilai_aktual && <div className="sm:col-span-2"><span className="text-gray-400">Nilai aktual:</span> {f.nilai_aktual}</div>}
                         {f.threshold && <div><span className="text-gray-400">Threshold:</span> {f.threshold}</div>}
-                        <div><span className="text-gray-400">Paket terdampak:</span> {f.jumlah_paket_terdampak} · {rupiah(f.total_nilai_terdampak)}</div>
+                        {(f.jumlah_paket_terdampak > 0 || f.total_nilai_terdampak > 0) && (
+                          <div>
+                            <span className="text-gray-400">Paket terdampak:</span> {f.jumlah_paket_terdampak}
+                            {f.total_nilai_terdampak > 0 ? ` · ${rupiah(f.total_nilai_terdampak)}` : ''}
+                          </div>
+                        )}
                         {f.regulasi && <div className="sm:col-span-2"><span className="text-gray-400">Regulasi:</span> {f.regulasi}</div>}
                         {f.rekomendasi && <div className="sm:col-span-2"><span className="text-gray-400">Rekomendasi EWS:</span> {f.rekomendasi}</div>}
                       </div>
