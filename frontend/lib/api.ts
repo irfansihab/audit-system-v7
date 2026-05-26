@@ -65,6 +65,25 @@ export interface SkillInfo {
   has_pipeline: boolean;
 }
 
+export interface GateItem {
+  id: string;
+  judul: string;
+  status?: 'PENDING' | 'IN_PROGRESS' | 'DONE' | 'NEEDS_REVISION';
+  catatan?: string;
+}
+export interface GateStatus {
+  gated: boolean;
+  skill: string;
+  gates: GateItem[];
+  progress: {
+    skill: string;
+    total_gates: number;
+    current_gate: string | null;
+    gates: GateItem[];
+    updated_at?: string;
+  } | null;
+}
+
 export interface User {
   id: number;
   email: string;
@@ -125,6 +144,10 @@ export const api = {
 
   /** Daftar skill pengawasan terdaftar (folder-driven) untuk dropdown. */
   getSkills: () => request<SkillInfo[]>('/skills'),
+
+  /** Status evaluasi bertahap (gate-based). gated=false untuk skill non-bertahap. */
+  getGates: (penugasanId: number) =>
+    request<GateStatus>(`/penugasan/${penugasanId}/gates`),
 
   listPenugasan: () => request<Penugasan[]>('/penugasan'),
 

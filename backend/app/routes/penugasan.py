@@ -404,6 +404,32 @@ async def get_context_readiness(
     return context_readiness(Path(p.folder_path), skill=p.skill, has_input_docs=has_input)
 
 
+@router.get("/{penugasan_id}/gates")
+async def get_gates(
+    penugasan_id: int,
+    current: tuple[User, Role] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Status evaluasi bertahap (gate-based). Untuk skill non-bertahap → gated=false.
+
+    Mengembalikan daftar gate (dari registry) + progress (penilaian-progress.json)
+    bila sudah diinisialisasi. Dipakai panel Gate di UI.
+    """
+    from app import gate_registry as greg
+    from app.tools.gate_tools import read_progress
+
+    p = await _get_penugasan_or_404(db, penugasan_id)
+    skill = p.skill if isinstance(p.skill, str) else p.skill.value
+    if not greg.skill_has_gates(skill):
+        return {"gated": False, "skill": skill, "gates": [], "progress": None}
+    return {
+        "gated": True,
+        "skill": skill,
+        "gates": greg.list_gates(skill),
+        "progress": read_progress(Path(p.folder_path)),
+    }
+
+
 @router.get("/{penugasan_id}/context-md")
 async def get_context_md(
     penugasan_id: int,

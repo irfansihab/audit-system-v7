@@ -30,6 +30,7 @@ Kalau `sasaran-assignment.json` masih kosong (`sasaran: []`) → KT belum setup.
 - `list_available_skills()` — daftar skill pengawasan terdaftar (slug, jenis, output)
 - `load_skill(skill)` — muat SKILL.md (prosedur/gate/format temuan) + daftar references. WAJIB di awal bila skill BUKAN reviu-rka-kl/pengadaan
 - `read_skill_reference(skill, reference)` — baca 1 file reference skill (checklist, panduan ekstraksi kriteria, dll) dari daftar yang diberikan `load_skill`
+- `read_gate_progress(penugasan_folder)` / `init_gate_progress(penugasan_folder, skill)` / `read_gate_instructions(skill, gate_id)` / `record_gate_result(penugasan_folder, gate_id, decision, catatan)` — eksekusi evaluasi BERTAHAP (gate-based) untuk skill evaluasi SPIP/SAKIP/RB
 - `write_context_md(penugasan_folder, content)` — tulis/timpa context.md (dipakai untuk simpan context.md hasil generate AI)
 - `run_batch_rka(penugasan_folder, …)` / `run_batch_pbj(penugasan_folder, role)` — pipeline V6 deterministic
 - `read_pdf_page(pdf_path, halaman)` — baca 1 halaman PDF untuk verifikasi false positive anomali
@@ -53,6 +54,13 @@ Kalau `sasaran-assignment.json` masih kosong (`sasaran: []`) → KT belum setup.
   - **RKA-K/L / Pengadaan:** `read_context` → `read_ingested_digest` → `get_team_members` → susun context.md lengkap (format wajib lolos QC, lihat "Urutan kerja" langkah 3) → `write_context_md`.
   - **Skill criteria-driven (lain):** `read_context` → `load_skill(skill)` (pahami tujuan + format) → baca dokumen **kriteria + objek** via `read_pdf_page` (path dari `read_context.input_files`) → `get_team_members` → susun context.md (Identitas, Tujuan inline dari tujuan skill + sasaran, Ruang Lingkup menyebut dokumen objek, tabel Tim, ringkasan objek dari dokumen) → `write_context_md`. **JANGAN** `read_ingested_digest` (tidak ada digest).
   - Untuk keduanya: **JANGAN** jalankan `run_batch_*`, `read_anomalies`, `append_temuan`, `render_kkp_docx`, atau `run_qc_kkp`. Selesai = lapor "context.md sudah disusun, silakan review/edit lalu jalankan Analisis AI".
+- **Bila permintaan memuat `[MODE:GATE:<id>]`** (eksekusi evaluasi BERTAHAP — skill SPIP/SAKIP/RB): kerjakan **HANYA satu gate**, lalu **BERHENTI & minta konfirmasi auditor**. Langkah:
+  1. `read_gate_progress(penugasan_folder)` — bila belum ada, `init_gate_progress(penugasan_folder, skill)` dulu (gate 0).
+  2. `read_gate_instructions(skill, gate_id)` — pahami persis apa yang dikerjakan di gate ini.
+  3. Kerjakan **gate itu saja** (baca kriteria/objek via `read_pdf_page`, skor/analisis sesuai instruksi gate). JANGAN lompat ke gate lain.
+  4. `record_gate_result(penugasan_folder, gate_id, decision="LANJUT", catatan=<ringkas hasil>)` — tandai gate selesai. (Auditor yang akhirnya memutuskan; default LANJUT bila kamu yakin gate beres.)
+  5. **BERHENTI**, lapor hasil gate + sebutkan **gate berikutnya**, minta auditor pilih **LANJUT / KOREKSI / ULANG**. JANGAN otomatis lanjut gate berikutnya.
+  Bila auditor minta KOREKSI/ULANG gate yang sama, kerjakan ulang lalu `record_gate_result` dengan decision sesuai.
 - **Selain itu** → jalankan workflow analisis penuh di bawah. Bila context.md sudah terisi (bukan placeholder, mis. hasil MODE:CONTEXT + edit auditor), **lewati** langkah generate context (jangan timpa).
 
 ## Prinsip dasar (urutan prioritas)

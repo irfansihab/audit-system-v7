@@ -39,6 +39,8 @@ class Settings(BaseSettings):
     # Folder template laporan standar (LHP skeleton {{...}} per jenis pengawasan
     # di <path>/_skeleton-lhp/template-lhp-[skill].docx). Di docker di-mount ke /templates.
     app_templates_path: str = "/templates"
+    # Folder task/alur cowork — memuat *-bertahap.md (definisi gate evaluasi).
+    app_tasks_path: str = "/tasks"
     # Vault pengetahuan penuh (Obsidian/Karpathy) — read-only referensi. Catatan
     # ada di <app_vault_path>/wiki/. Kosong = fitur baca vault non-aktif.
     app_vault_path: str = ""
@@ -81,6 +83,10 @@ class Settings(BaseSettings):
     @property
     def templates_path(self) -> Path:
         return Path(self.app_templates_path)
+
+    @property
+    def tasks_path(self) -> Path:
+        return Path(self.app_tasks_path)
 
     @property
     def vault_path(self) -> Path | None:

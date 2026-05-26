@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { api, getSession, Dokumen, Penugasan, Role, Session } from '@/lib/api';
+import { api, getSession, Dokumen, Penugasan, Role, Session, GateStatus } from '@/lib/api';
 
 type Tab = 'dokumen' | 'setup' | 'chat' | 'output';
 
@@ -122,6 +122,9 @@ export default function DetailPenugasanPage() {
             {error}
           </div>
         )}
+
+        {/* Panel evaluasi bertahap — tampil hanya untuk skill gated (SPIP/SAKIP/RB) */}
+        <GatePanel penugasanId={id} skill={penugasan.skill} />
 
         {/* key={id} memaksa React unmount + remount setiap kali penugasan ganti,
             mencegah state lokal (chat prompt, modal preview, dll) bocor antar penugasan. */}
@@ -1385,6 +1388,76 @@ function OutputTab({ penugasan }: { penugasan: Penugasan }) {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Panel status evaluasi BERTAHAP (gate-based) — tampil hanya untuk skill gated
+// (SPIP/SAKIP/RB). Read-only; eksekusi gate dijalankan via tab Chat (AT) dengan
+// menulis perintah `[MODE:GATE:<id>]`.
+const GATE_BADGE: Record<string, string> = {
+  DONE: 'bg-emerald-100 text-emerald-700',
+  IN_PROGRESS: 'bg-blue-100 text-blue-700',
+  NEEDS_REVISION: 'bg-amber-100 text-amber-700',
+  PENDING: 'bg-gray-100 text-gray-500',
+};
+
+function GatePanel({ penugasanId, skill }: { penugasanId: number; skill: string }) {
+  const [data, setData] = useState<GateStatus | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    api
+      .getGates(penugasanId)
+      .then((d) => alive && setData(d))
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [penugasanId]);
+
+  if (!data || !data.gated) return null;
+
+  const prog = data.progress;
+  const statusOf = (id: string) =>
+    prog?.gates.find((g) => g.id === id)?.status || 'PENDING';
+  const current = prog?.current_gate ?? null;
+  const doneCount = prog?.gates.filter((g) => g.status === 'DONE').length ?? 0;
+
+  return (
+    <div className="mb-4 rounded-lg border border-violet-200 bg-violet-50/50 p-4">
+      <div className="flex items-center justify-between mb-2">
+        <div className="font-semibold text-sm text-violet-900">
+          Evaluasi Bertahap (gate-based) — {data.skill}
+        </div>
+        <div className="text-xs text-violet-700">
+          {prog ? `${doneCount}/${data.gates.length} gate selesai` : 'belum dimulai'}
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {data.gates.map((g) => {
+          const st = statusOf(g.id);
+          const isCurrent = current === g.id;
+          return (
+            <span
+              key={g.id}
+              title={g.judul + (statusOf(g.id) ? ` — ${st}` : '')}
+              className={`text-[11px] px-2 py-0.5 rounded-full border ${GATE_BADGE[st]} ${
+                isCurrent ? 'ring-2 ring-violet-400 font-semibold' : 'border-transparent'
+              }`}
+            >
+              Gate {g.id}
+            </span>
+          );
+        })}
+      </div>
+      <div className="mt-2 text-xs text-violet-800">
+        {current
+          ? <>Gate aktif: <b>Gate {current}</b>. Anggota Tim menjalankan via tab <b>Chat</b> dengan perintah <code className="bg-white px-1 rounded">[MODE:GATE:{current}]</code>, lalu Anda pilih LANJUT / KOREKSI / ULANG.</>
+          : prog
+          ? <>✓ Semua gate selesai. Lanjut ke penyusunan LHE/LHP di tab Output.</>
+          : <>Mulai dengan menjalankan <code className="bg-white px-1 rounded">[MODE:GATE:{data.gates[0]?.id}]</code> di tab Chat (Anggota Tim).</>}
+      </div>
     </div>
   );
 }
