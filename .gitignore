@@ -57,3 +57,6 @@ llm-wiki/
 # EWS SIRUP delivery tim (service terpisah; jangan vendor node_modules/.env/crawl besar)
 # Root-anchored supaya tidak ikut meng-ignore frontend/app/cacm (macOS case-insensitive)
 /CACM/
+
+# Output harness ujicoba digestion
+_digest-test/

@@ -1,0 +1,10 @@
+{
+  "_keterangan": "Contoh golden untuk --golden. Key = nama file di korpus. Value = {label: nilai_harapan}. Dicocokkan sebagai substring (case-insensitive) ke isi JSON digest file tsb. Anotasi cukup sebagian dokumen sebagai sampel akurasi.",
+  "TOR-Survei-Literasi-2026.pdf": {
+    "kementerian": "Komunikasi dan Digital",
+    "total_biaya": "2450000000"
+  },
+  "KAK-Data-Center-DRC-2026.pdf": {
+    "nilai_hps": "8200000000"
+  }
+}

@@ -285,11 +285,34 @@ async def run_qc_kkp(args: dict) -> dict:
 
 
 def _summarize_digest(name: str, data: dict) -> dict:
-    """Ambil field kunci dari satu file digest untuk bahan context.md."""
+    """Ambil field kunci dari satu file digest untuk bahan context.md.
+
+    Catatan: digest RAB JUGA punya `identitas_ro` (seperti TOR), jadi RAB harus
+    dideteksi LEBIH DULU (lewat `komponen`/`total_pagu`) — kalau tidak, RAB salah
+    ter-label TOR & data komponen/pagu hilang. Pengadaan menyimpan hasil per-dokumen
+    di bawah `dokumen`, bukan top-level.
+    """
     out: dict = {"file": name}
     if not isinstance(data, dict):
         return out
-    # TOR (digest_tor): identitas_ro + biaya + dasar_hukum
+
+    # RAB (digest_rab): punya komponen / total_pagu (cek SEBELUM TOR).
+    komp = data.get("komponen")
+    if komp is not None or data.get("total_pagu") is not None:
+        out["jenis"] = "RAB"
+        ident = data.get("identitas_ro") or data.get("identitas") or {}
+        if isinstance(ident, dict):
+            for k in ("kementerian", "unit_eselon_i", "program_nama", "program",
+                      "kegiatan_nama", "kegiatan", "ro", "alokasi_dana"):
+                if ident.get(k):
+                    out[k] = ident[k]
+        if isinstance(komp, list):
+            out["jumlah_komponen"] = len(komp)
+        if data.get("total_pagu") is not None:
+            out["total_pagu"] = data["total_pagu"]
+        return out
+
+    # TOR (digest_tor): identitas_ro + biaya + dasar_hukum (tanpa komponen).
     idr = data.get("identitas_ro")
     if isinstance(idr, dict):
         out["jenis"] = "TOR"
@@ -308,23 +331,38 @@ def _summarize_digest(name: str, data: dict) -> dict:
                 f"{d.get('jenis_regulasi') or ''} {d.get('nomor') or ''}/{d.get('tahun') or ''}".strip()
                 for d in dh[:8]
             ]
-    # RAB (digest_rab): identitas (alokasi_dana) + komponen
-    elif data.get("komponen") is not None or (isinstance(data.get("identitas"), dict)):
-        out["jenis"] = "RAB"
-        ident = data.get("identitas") or data.get("identitas_ro") or {}
-        if isinstance(ident, dict):
-            for k in ("alokasi_dana", "program", "kegiatan", "ro"):
-                if ident.get(k):
-                    out[k] = ident[k]
-        komp = data.get("komponen")
-        if isinstance(komp, list):
-            out["jumlah_komponen"] = len(komp)
-    # Pengadaan digest (KAK/HPS/RFI/Kontrak): ambil top-level keys ringkas
-    else:
+        return out
+
+    # Pengadaan (digest_pengadaan): hasil per-dokumen di `dokumen.{kak,hps,rfi,kontrak}`.
+    dok = data.get("dokumen")
+    if isinstance(dok, dict):
         out["jenis"] = "PENGADAAN"
-        for k in ("obyek", "nilai_hps", "metode_pemilihan", "jangka_waktu", "sla"):
-            if data.get(k):
-                out[k] = data[k]
+        out["dokumen_per_jenis"] = {k: len(v) for k, v in dok.items() if isinstance(v, list)}
+
+        def _first_parsed(key: str) -> dict:
+            lst = dok.get(key) or []
+            p = lst[0].get("parsed") if lst and isinstance(lst[0], dict) else None
+            return p if isinstance(p, dict) else {}
+
+        kak, hps = _first_parsed("kak"), _first_parsed("hps")
+        nama = kak.get("nama_pekerjaan") or hps.get("nama_pekerjaan")
+        if nama:
+            out["obyek"] = nama
+        nilai = hps.get("nilai_hps") or kak.get("nilai_hps")
+        if nilai:
+            out["nilai_hps"] = nilai
+        per = kak.get("periode") or hps.get("periode")
+        if per:
+            out["jangka_waktu"] = per
+        if kak.get("sla_value"):
+            out["sla"] = kak["sla_value"]
+        return out
+
+    # Fallback: pengadaan top-level (struktur lama).
+    out["jenis"] = "PENGADAAN"
+    for k in ("obyek", "nilai_hps", "metode_pemilihan", "jangka_waktu", "sla"):
+        if data.get(k):
+            out[k] = data[k]
     return out
 
 
