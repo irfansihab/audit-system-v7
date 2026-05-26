@@ -44,12 +44,12 @@ export default function DetailPenugasanPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>, jenis?: string) => {
     const files = e.target.files;
     if (!files) return;
     for (const f of Array.from(files)) {
       try {
-        const d = await api.uploadDokumen(id, f);
+        const d = await api.uploadDokumen(id, f, jenis || undefined);
         setDokumen((prev) => [...prev, d]);
       } catch (err: any) {
         setError(err.message);
@@ -136,6 +136,7 @@ export default function DetailPenugasanPage() {
             onDelete={handleDeleteDokumen}
             allReady={allReady}
             role={session.role_aktif}
+            skill={penugasan.skill}
           />
         )}
 
@@ -160,36 +161,76 @@ export default function DetailPenugasanPage() {
   );
 }
 
+// Pilihan jenis dokumen per kelompok skill (untuk dropdown upload). Default
+// "(auto)" = backend klasifikasi dari nama file.
+const PBJ_SKILLS = ['reviu-pengadaan', 'audit-pengadaan', 'pemantauan-pengadaan', 'konsultasi-pengadaan'];
+function jenisOptionsFor(skill: string): string[] {
+  if (skill === 'reviu-rka-kl') return ['TOR', 'RAB', 'KP', 'PKP', 'ST', 'OTHER'];
+  if (PBJ_SKILLS.includes(skill)) return ['KAK', 'HPS', 'RFI', 'KONTRAK', 'KP', 'PKP', 'ST', 'OTHER'];
+  // criteria-driven (audit-kinerja, evaluasi-*, *-umum, kepatuhan-saipi, dll)
+  return ['KRITERIA', 'OBJEK', 'KP', 'PKP', 'ST', 'OTHER'];
+}
+
 function DokumenTab({
   dokumen,
   onUpload,
   allReady,
   role,
   onDelete,
+  skill,
 }: {
   dokumen: Dokumen[];
-  onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onUpload: (e: React.ChangeEvent<HTMLInputElement>, jenis?: string) => void;
   allReady: boolean;
   role: Role;
   onDelete: (d: Dokumen) => void;
+  skill: string;
 }) {
   const canUpload = role === 'AT';
+  const [jenis, setJenis] = useState('');
+  const isCriteriaDriven = skill !== 'reviu-rka-kl' && !PBJ_SKILLS.includes(skill);
+  const opts = jenisOptionsFor(skill);
   return (
     <div>
       <div className="mb-4 p-3 rounded bg-amber-50 border border-amber-200 text-amber-900 text-xs">
-        📎 <strong>Wajib untuk QC SAIPI:</strong> upload juga <strong>KP</strong> (Kartu Penugasan) dan
-        <strong> PKP</strong> (Program Kerja Pengawasan) dari INTEGRAL ke folder ini sebelum analisis —
-        tanpa keduanya, QC akan <strong>BLOKIR</strong> (REN-001/REN-002). Beri nama file diawali
-        <code className="bg-amber-100 px-1 rounded">KP</code> / <code className="bg-amber-100 px-1 rounded">PKP</code>.
+        {isCriteriaDriven ? (
+          <>
+            📎 Skill <strong>{skill}</strong> bersifat <strong>criteria-driven</strong>: unggah dokumen
+            <strong> KRITERIA</strong> (regulasi/SOP/juknis acuan) dan <strong>OBJEK</strong> (dokumen yang
+            diperiksa). Pilih jenis di dropdown, atau awali nama file dengan
+            <code className="bg-amber-100 px-1 rounded">kriteria-</code>/<code className="bg-amber-100 px-1 rounded">objek-</code>.
+            Sertakan juga <strong>KP/PKP</strong> agar QC SAIPI tidak BLOKIR.
+          </>
+        ) : (
+          <>
+            📎 <strong>Wajib untuk QC SAIPI:</strong> upload juga <strong>KP</strong> (Kartu Penugasan) dan
+            <strong> PKP</strong> (Program Kerja Pengawasan) dari INTEGRAL sebelum analisis — tanpa keduanya
+            QC <strong>BLOKIR</strong> (REN-001/REN-002). Awali nama file
+            <code className="bg-amber-100 px-1 rounded">KP</code> / <code className="bg-amber-100 px-1 rounded">PKP</code>.
+          </>
+        )}
       </div>
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold text-primary-dark">Dokumen Penugasan</h2>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           {canUpload ? (
-            <label className="px-4 py-2 rounded bg-primary text-white text-sm font-semibold cursor-pointer hover:bg-primary-dark">
-              + Upload
-              <input type="file" multiple onChange={onUpload} className="hidden" />
-            </label>
+            <>
+              <select
+                value={jenis}
+                onChange={(e) => setJenis(e.target.value)}
+                title="Jenis dokumen untuk file yang diunggah berikutnya"
+                className="border border-gray-300 rounded-md px-2 py-2 text-sm bg-white"
+              >
+                <option value="">(auto dari nama file)</option>
+                {opts.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+              <label className="px-4 py-2 rounded bg-primary text-white text-sm font-semibold cursor-pointer hover:bg-primary-dark">
+                + Upload
+                <input type="file" multiple onChange={(e) => onUpload(e, jenis)} className="hidden" />
+              </label>
+            </>
           ) : (
             <span className="px-4 py-2 rounded bg-gray-100 text-gray-500 text-sm">
               🔒 Upload hanya oleh Anggota Tim (AT)
@@ -200,9 +241,13 @@ function DokumenTab({
 
       {dokumen.length === 0 ? (
         <div className="bg-white border border-dashed border-gray-300 rounded-lg p-10 text-center text-gray-500">
-          {canUpload
-            ? 'Belum ada dokumen. Upload TOR/RAB (Reviu RKA-K/L) atau KAK/HPS/RFI/Kontrak (Reviu Pengadaan).'
-            : 'Belum ada dokumen. AT yang akan upload bukti pendukung setelah KT setup sasaran selesai.'}
+          {!canUpload
+            ? 'Belum ada dokumen. AT yang akan upload bukti pendukung setelah KT setup sasaran selesai.'
+            : isCriteriaDriven
+            ? 'Belum ada dokumen. Unggah dokumen KRITERIA (regulasi/SOP acuan) + OBJEK (yang diperiksa).'
+            : skill === 'reviu-rka-kl'
+            ? 'Belum ada dokumen. Upload TOR/RAB (Reviu RKA-K/L).'
+            : 'Belum ada dokumen. Upload KAK/HPS/RFI/Kontrak (Pengadaan).'}
         </div>
       ) : (
         <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">

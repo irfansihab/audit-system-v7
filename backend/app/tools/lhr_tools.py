@@ -39,14 +39,16 @@ def resolve_lhp_template(skill: str) -> Path | None:
     Prioritas:
       1. Skeleton per-skill di APP_TEMPLATES_PATH/_skeleton-lhp/template-lhp-[skill].docx
          (placeholder {{...}} V6, satu file per jenis laporan).
-      2. Fallback: template app reviu-rka-kl (sudah teruji) — supaya skill tanpa
-         skeleton khusus tetap menghasilkan LHP KKSA.
+      2. Skeleton GENERIK (template-lhp-generic.docx, kata "Reviu"→"Pengawasan")
+         untuk skill tanpa skeleton khusus (mis. *-umum, kepatuhan-saipi).
+      3. Fallback terakhir: template app reviu-rka-kl (sudah teruji).
     Return path absolut atau None bila tidak ada satupun.
     """
     slug = _slug(skill)
-    skel = settings.templates_path / "_skeleton-lhp" / f"template-lhp-{slug}.docx"
-    if skel.is_file():
-        return skel
+    skel_dir = settings.templates_path / "_skeleton-lhp"
+    for candidate in (skel_dir / f"template-lhp-{slug}.docx", skel_dir / "template-lhp-generic.docx"):
+        if candidate.is_file():
+            return candidate
     fallback = _APP_TEMPLATE_DIR / "template-lhp-reviu-rka-kl.docx"
     return fallback if fallback.is_file() else None
 

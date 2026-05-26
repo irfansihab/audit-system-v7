@@ -544,7 +544,8 @@ Folder `skills/` (taksonomi `audit-system-v4`, 22 entri cowork) ditambahkan. v7 
   - ✅ **Evaluasi bertahap (gate-based)** — `gate_registry` mem-parse `knowledge/tasks/*-bertahap.md` (SPIP 10 gate, SAKIP 7, RB 9) folder-driven; `penilaian-progress.json` resume-able + `gate_tools` (read/init/instructions/record dengan keputusan LANJUT/KOREKSI/ULANG); prompt AT `[MODE:GATE:<id>]` (kerjakan 1 gate → record → STOP minta konfirmasi); `GET /penugasan/{id}/gates` + panel Gate di UI. Verified (state machine + registry + endpoint).
   - ✅ **Rapikan folder** — aset cowork → `knowledge/{skills,templates,wiki,tasks}` (config `APP_*_PATH` + mount docker disesuaikan); hapus `backend/wiki/` basi.
   - 📋 **Pemetaan `tasks/` cowork → v7:** Task 00 (role)→auth/role-gating; 01 (start)→PT create+KT setup+AT upload; 03 (KKP)→agen AT; 04 (LHP)→agen KT + `render_lhp` per-template. ARSIP sebagian dilebur/sengaja dilewati.
-  - ⏳ Sisa: skeleton LHP untuk skill *-umum + kepatuhan-saipi, UX unggah kriteria, format non-KKSA (RB tabel 4-dimensi, Memo Konsultansi), integrasi meta-skill graduasi, tombol gate one-click di UI (kini via chat `[MODE:GATE]`).
+  - ✅ **Template generik + UX kriteria** — `template-lhp-generic.docx` (kata "Reviu"→"Pengawasan") jadi fallback untuk 6 skill tanpa skeleton (*-umum + kepatuhan-saipi); resolver: per-skill → generic → app RKA. UI Dokumen kini skill-aware: dropdown jenis (KRITERIA/OBJEK untuk criteria-driven, TOR/RAB untuk RKA, KAK/HPS/dst untuk PBJ) + petunjuk per jenis skill. Gate one-click (tombol LANJUT/KOREKSI/ULANG) sudah ada.
+  - ⏳ Sisa: format non-KKSA asli (RB tabel 4-dimensi, Memo Konsultansi — perlu render khusus), tombol "Jalankan gate aktif" dari panel (kini via chat `[MODE:GATE]`), integrasi meta-skill graduasi, tes live agen.
 
 ---
 
