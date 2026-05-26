@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     # Folder skill pengawasan (SKILL.md + references) — registry skill v7.
     # Default mengikuti layout repo; di docker di-mount ke /skills.
     app_skills_path: str = "/skills"
+    # Folder template laporan standar (LHP skeleton {{...}} per jenis pengawasan
+    # di <path>/_skeleton-lhp/template-lhp-[skill].docx). Di docker di-mount ke /templates.
+    app_templates_path: str = "/templates"
     # Vault pengetahuan penuh (Obsidian/Karpathy) — read-only referensi. Catatan
     # ada di <app_vault_path>/wiki/. Kosong = fitur baca vault non-aktif.
     app_vault_path: str = ""
@@ -74,6 +77,10 @@ class Settings(BaseSettings):
     @property
     def skills_path(self) -> Path:
         return Path(self.app_skills_path)
+
+    @property
+    def templates_path(self) -> Path:
+        return Path(self.app_templates_path)
 
     @property
     def vault_path(self) -> Path | None:

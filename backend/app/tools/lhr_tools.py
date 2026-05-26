@@ -13,16 +13,42 @@ sync — sama pola dengan `run_qc_kkp` di kkp_tools.py. Pola lama bermasalah:
 agen tidak dapat hasil → improvisasi.
 """
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 
 from claude_agent_sdk import tool
 
+from app.config import get_settings
 from app.tools.v6_bridge import qc_summary_counts, run_v6_script, safe_read_json
+
+settings = get_settings()
 
 # Template LHP placeholder-driven, dimiliki app (bukan V6) supaya backend/v6/
 # tetap read-only. render_lhp.py V6 menerima override path lewat --template.
 _APP_TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
+
+
+def _slug(skill: str) -> str:
+    return re.sub(r"[^a-z0-9\-]", "-", str(skill).strip().lower())
+
+
+def resolve_lhp_template(skill: str) -> Path | None:
+    """Pilih template LHP per jenis pengawasan.
+
+    Prioritas:
+      1. Skeleton per-skill di APP_TEMPLATES_PATH/_skeleton-lhp/template-lhp-[skill].docx
+         (placeholder {{...}} V6, satu file per jenis laporan).
+      2. Fallback: template app reviu-rka-kl (sudah teruji) — supaya skill tanpa
+         skeleton khusus tetap menghasilkan LHP KKSA.
+    Return path absolut atau None bila tidak ada satupun.
+    """
+    slug = _slug(skill)
+    skel = settings.templates_path / "_skeleton-lhp" / f"template-lhp-{slug}.docx"
+    if skel.is_file():
+        return skel
+    fallback = _APP_TEMPLATE_DIR / "template-lhp-reviu-rka-kl.docx"
+    return fallback if fallback.is_file() else None
 
 
 @tool(
@@ -160,10 +186,15 @@ async def write_rekomendasi_json(args: dict) -> dict:
 
 
 @tool(
-    "render_lhr_rka",
-    "Render LHR Reviu RKA-K/L via scripts/render_lhp.py V6. Butuh _LHP/rekomendasi.json sudah ada.",
+    "render_lhp",
+    "Render LHP/LHR via scripts/render_lhp.py V6, memakai TEMPLATE sesuai jenis "
+    "pengawasan (`skill`). Template diambil dari _skeleton-lhp/template-lhp-[skill].docx "
+    "(mis. audit-kinerja, evaluasi-sakip, reviu-rka-kl); bila skill tak punya skeleton "
+    "khusus, fallback ke template KKSA reviu-rka-kl. Butuh _LHP/rekomendasi.json + "
+    "_KKP/temuan.json (approved). Untuk reviu-pengadaan pakai `render_lhr_pbj` (pipeline terpisah).",
     {
         "penugasan_folder": str,
+        "skill": str,
         "judul": str,
         "auditi": str,
         "dasar_permintaan": str,
@@ -171,7 +202,7 @@ async def write_rekomendasi_json(args: dict) -> dict:
         "tanggal_exit_meeting": str,
     },
 )
-async def render_lhr_rka(args: dict) -> dict:
+async def render_lhp(args: dict) -> dict:
     folder = Path(args["penugasan_folder"])
     rekomendasi = folder / "_LHP" / "rekomendasi.json"
     if not rekomendasi.exists():
@@ -179,10 +210,14 @@ async def render_lhr_rka(args: dict) -> dict:
             "content": [{"type": "text", "text": "FAILED|rekomendasi.json belum ada"}],
             "is_error": True,
         }
-    template = _APP_TEMPLATE_DIR / "template-lhp-reviu-rka-kl.docx"
-    if not template.exists():
+    skill = args.get("skill") or ""
+    template = resolve_lhp_template(skill)
+    if template is None:
         return {
-            "content": [{"type": "text", "text": f"FAILED|template LHP tidak ada: {template}"}],
+            "content": [{
+                "type": "text",
+                "text": f"FAILED|template LHP tidak ada untuk skill='{skill}' (cek APP_TEMPLATES_PATH/_skeleton-lhp/)",
+            }],
             "is_error": True,
         }
     code, out, err = await run_v6_script(
@@ -204,7 +239,7 @@ async def render_lhr_rka(args: dict) -> dict:
             "content": [{"type": "text", "text": f"FAILED|exit={code}|err={err[:400]}"}],
             "is_error": True,
         }
-    return {"content": [{"type": "text", "text": f"OK|{out[:200]}"}]}
+    return {"content": [{"type": "text", "text": f"OK|template={template.name}|{out[:180]}"}]}
 
 
 @tool(
@@ -298,7 +333,7 @@ LHR_TOOLS = [
     read_temuan_json,
     check_completeness,
     write_rekomendasi_json,
-    render_lhr_rka,
-    render_lhr_pbj,
+    render_lhp,        # per-jenis template (reviu-rka-kl + criteria-driven)
+    render_lhr_pbj,    # pipeline khusus reviu-pengadaan
     run_qc_lhp,
 ]

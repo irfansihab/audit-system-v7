@@ -539,7 +539,9 @@ Folder `skills/` (taksonomi `audit-system-v4`, 22 entri cowork) ditambahkan. v7 
 
 - **Fase A (selesai):** `skills_registry` folder-driven (17 skill terdaftar; meta-skill `graduasi` dikecualikan) + `Skill` enum→string ber-validasi registry + tools agen `load_skill`/`read_skill_reference` (path-safe, strip prefiks `audit-system-v4/`) + `GET /skills` + dropdown jenis penugasan dinamis. `list_temuan_patterns` juga folder-driven (12 kategori pattern). Verified.
 - **Fase B (selesai — pilot audit-kinerja):** input criteria-driven (jenis `KRITERIA`/`OBJEK` → READY tanpa digest, subfolder benar) + gate `context_readiness` skill-aware (pipeline=butuh digest, criteria-driven=butuh kriteria/objek) + prompt AT/KT branch (`load_skill` → ikuti SKILL.md, lewati `run_batch_*`) + LHP reuse `render_lhr_rka` (KKSA). E2E verified: create → upload kriteria/objek → gate true → render KKP + LHP-SUBSTANSI.
-- **Sisa (Fase C):** onboard skill spesifik lain (cukup folder+pattern), UX unggah kriteria, format output asli per PANDUAN.md (LHE/LHR-tabular/Memo/RB), integrasi meta-skill graduasi.
+- **Fase C (berjalan):**
+  - ✅ **LHP per jenis laporan** — folder `templates/` ditambah (`_skeleton-lhp/template-lhp-[skill].docx`, placeholder `{{...}}` V6, 11 skeleton + letterhead resmi). Config `APP_TEMPLATES_PATH` + `resolve_lhp_template(skill)`; tool `render_lhr_rka` digeneralkan jadi **`render_lhp(skill, …)`** yang otomatis memilih template per jenis (fallback KKSA reviu-rka-kl untuk skill tanpa skeleton: 5 *-umum + kepatuhan-saipi). Verified: audit-kinerja/evaluasi-sakip/reviu-rka-kl render dari skeleton masing-masing.
+  - ⏳ Sisa: skeleton untuk skill *-umum + kepatuhan-saipi, UX unggah kriteria, format non-KKSA (RB tabel 4-dimensi, Memo Konsultansi), integrasi meta-skill graduasi.
 
 ---
 
