@@ -34,6 +34,9 @@ services:
       APP_WIKI_PATH: /wiki
       APP_TASKS_PATH: /tasks
       APP_CORS_ORIGINS: http://localhost:3000
+      # Tier-2 digestion: pulihkan field hilang via LLM murah (off default).
+      DIGEST_LLM_FALLBACK: ${DIGEST_LLM_FALLBACK:-false}
+      DIGEST_LLM_MODEL: ${DIGEST_LLM_MODEL:-claude-haiku-4-5-20251001}
     volumes:
       - ./backend/app:/app/app
       - audit_v7_data:/data
