@@ -68,3 +68,6 @@ digest-test-corpus/**/*.docx
 digest-test-corpus/**/*.xlsx
 digest-test-corpus/**/*.doc
 digest-test-corpus/**/*.xls
+
+# Claude Code per-user (izin tool, dll. — jangan ikut ke repo)
+/.claude/

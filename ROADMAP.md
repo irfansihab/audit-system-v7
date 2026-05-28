@@ -488,7 +488,7 @@ konteks berikutnya.
 | Fase | Item | Inti |
 |------|------|------|
 | **W1** (prioritas) | Baca penuh vault | Config `APP_VAULT_PATH`; tool `search_wiki` + `get_wiki_page` (index-driven); prompt AT/KT cari konteks auditi/vendor/BPK; panel "Cari Wiki" di tab Knowledge |
-| **W2** | Pemantauan & promosi pattern | `GET /knowledge/pattern-monitor` agregasi `pattern_suggestions`; `POST /knowledge/patterns` promosikan ke `wiki/temuan-patterns/{skill}/` |
+| **W2** ✅ | Pemantauan & promosi pattern | `GET /knowledge/pattern-monitor` agregasi `pattern_suggestions`; `POST /knowledge/patterns` promosikan ke `wiki/temuan-patterns/{skill}/` |
 | **W3** | Tulis-balik penugasan ➝ vault | Saat `LHP_DONE`, generate draft `pengawasan-{kode}.md` (format Karpathy + sitasi) + delta `index.md`/`log.md`; review & apply; model `WikiProposal` |
 
 ### CACM — integrasi EWS SIRUP tim (revisi 25 Mei 2026)
@@ -519,7 +519,7 @@ v7 = **aplikasi internal penerima**; agent tetap service terpisah milik tim (tid
 - [x] **C1a ingest offline + usulan** — model `CacmRun`/`EwsFinding` + `PenugasanStatus.USULAN_CACM`; `routes/cacm.py` (`/ingest`, `/ingest-sample`, `/runs`, `/findings/{id}/promote|dismiss`, `/usulan/{id}/accept`); UI `/cacm` (ringkasan + findings + promote/dismiss). E2E verified via ASGI test (20 findings sample → promote → USULAN_CACM → accept→DRAFT)
 - [x] **C1b webhook/pull** — `POST /cacm/ews-webhook` (verifikasi HMAC `X-Agent-Signature`, no Bearer) + `POST /cacm/sync` & `/trigger` (REST `X-API-Key`); config `CACM_WEBHOOK_SECRET`/`CACM_AGENT_*`; tombol "Sync dari agent" + badge source di UI. Receiver verified (signed→200, bad/no sig→401, agent off→503). Live pull butuh agent ter-deploy.
 - [x] **C2 otomasi** — sinyal LIVE (webhook/pull) otomatis buat usulan penugasan dari finding MERAH (config `CACM_AUTO_PROMOTE=off|merah|merah_kuning`), anti-duplikat per satker+kode; endpoint `/cacm/usulan/pending` + badge notifikasi di nav CACM. Offline ingest tidak auto-promote. (Scheduler = milik agent tim, cron 1 & 15 → push webhook.) Verified: webhook→5 MERAH auto-usulan, KUNING 0, dedup, offline 0.
-- [ ] W2 promosi pattern · [ ] W3 tulis-balik
+- [x] **W2 promosi pattern** — `app/wiki_promote.py` (agregasi `pattern_suggestions` feedback lintas penugasan → kandidat: group per judul ter-normalisasi, atribusi skill/obyek penugasan asal, flag `already_exists` vs wiki + sinyal sekunder `missed_pattern`) + `promote_pattern` (tulis file pattern `.md` ke `wiki/temuan-patterns/{skill}/`, frontmatter sesuai format existing, validasi skill via registry, anti-dup ID, best-effort sisip baris README index). Endpoint `GET /knowledge/pattern-monitor` (read, role-agnostik) + `POST /knowledge/patterns` (PT/PM). UI: panel "Promosi Pattern" di `/knowledge` (kandidat → form prefilled editable → Promote). Verified deterministik (agregasi+promote+guard+tool agen) + ASGI rute (shape, role-gate AT→403/PT→200, severity invalid→400). · [ ] W3 tulis-balik
 
 ### Audit sistem + penyederhanaan workflow (25 Mei 2026)
 

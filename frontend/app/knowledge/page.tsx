@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { api, clearToken, getSession, Session } from '@/lib/api';
+import { api, clearToken, getSession, Session, SkillInfo } from '@/lib/api';
 
 type SearchResult = {
   name: string;
@@ -18,11 +18,19 @@ type SearchResult = {
   snippet: string;
 };
 
+type PatternCandidate = {
+  judul: string;
+  id_proposed: string;
+  count: number;
+  rationales: string[];
+  skills: Record<string, number>;
+  suggested_skill: string;
+  penugasan: { folder: string; obyek: string; skill: string }[];
+  already_exists: boolean;
+  existing_id: string | null;
+};
+
 const SECTIONS = [
-  {
-    title: 'Promosi Pattern (W2)',
-    desc: 'Pantau usulan pattern dari feedback agen lintas penugasan, promosikan yang berulang menjadi pattern wiki resmi.',
-  },
   {
     title: 'Tulis-balik Penugasan (W3)',
     desc: 'Saat penugasan selesai, hasilkan draft catatan wiki (temuan + rekomendasi) untuk disetujui & di-apply ke vault.',
@@ -200,10 +208,13 @@ export default function KnowledgePage() {
           )}
         </div>
 
+        {/* ===== W2: Promosi Pattern (PT/PM) ===== */}
+        {(session.role_aktif === 'PT' || session.role_aktif === 'PM') && <PatternMonitorPanel />}
+
         {/* ===== Graduasi (PT/PM) ===== */}
         {(session.role_aktif === 'PT' || session.role_aktif === 'PM') && <GraduasiPanel />}
 
-        {/* ===== W2/W3 scaffold ===== */}
+        {/* ===== W3 scaffold ===== */}
         <div className="mb-3 text-sm text-gray-500">Berikutnya (substansi menyusul):</div>
         <div className="grid gap-4 md:grid-cols-2">
           {SECTIONS.map((s) => (
@@ -216,6 +227,239 @@ export default function KnowledgePage() {
         </div>
       </div>
     </main>
+  );
+}
+
+// Panel Promosi Pattern (PT/PM): pantau usulan pattern dari feedback agen lintas
+// penugasan, lalu promote yang berulang jadi pattern wiki resmi. Human-in-the-loop.
+type PromoteForm = {
+  skill: string;
+  pattern_id: string;
+  judul: string;
+  kategori: string;
+  severity: string;
+  kriteria_baku: string;
+  kondisi: string;
+  akibat: string;
+  rekomendasi: string;
+  bukti: string;
+  tags: string;
+  sumber_penugasan: string[];
+};
+
+const EMPTY_FORM: PromoteForm = {
+  skill: '', pattern_id: '', judul: '', kategori: '', severity: 'MEDIUM',
+  kriteria_baku: '', kondisi: '', akibat: '', rekomendasi: '', bukti: '', tags: '', sumber_penugasan: [],
+};
+
+function PatternMonitorPanel() {
+  const [candidates, setCandidates] = useState<PatternCandidate[]>([]);
+  const [skills, setSkills] = useState<SkillInfo[]>([]);
+  const [totalSug, setTotalSug] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [form, setForm] = useState<PromoteForm | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
+  const refresh = () => {
+    setLoading(true);
+    api.getPatternMonitor(90)
+      .then((r) => { setCandidates(r.candidates); setTotalSug(r.total_suggestions); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => {
+    refresh();
+    api.getSkills().then(setSkills).catch(() => {});
+  }, []);
+
+  const openFromCandidate = (c: PatternCandidate) => {
+    setMsg(null);
+    setForm({
+      ...EMPTY_FORM,
+      skill: c.suggested_skill || '',
+      pattern_id: c.already_exists ? '' : c.id_proposed,
+      judul: c.judul,
+      kondisi: c.rationales.join('\n'),
+      sumber_penugasan: c.penugasan.map((p) => p.obyek).filter(Boolean),
+    });
+  };
+
+  const setField = (k: keyof PromoteForm, v: string) =>
+    setForm((f) => (f ? { ...f, [k]: v } : f));
+
+  const submit = async () => {
+    if (!form) return;
+    if (!form.skill || !form.pattern_id.trim() || !form.judul.trim()) {
+      setMsg('Skill, ID pattern, dan judul wajib.');
+      return;
+    }
+    setBusy(true); setMsg(null);
+    try {
+      const r = await api.promotePattern({
+        skill: form.skill,
+        pattern_id: form.pattern_id.trim(),
+        judul: form.judul.trim(),
+        kategori: form.kategori.trim(),
+        severity: form.severity,
+        kriteria_baku: form.kriteria_baku.trim(),
+        kondisi: form.kondisi.trim(),
+        akibat: form.akibat.trim(),
+        rekomendasi: form.rekomendasi.trim(),
+        bukti: form.bukti.trim(),
+        tags: form.tags.split(',').map((t) => t.trim()).filter(Boolean),
+        sumber_penugasan: form.sumber_penugasan,
+      });
+      setMsg(`Pattern ${r.id} ditulis ke ${r.file}${r.readme_updated ? ' (index README diperbarui)' : ''}.`);
+      setForm(null);
+      refresh();
+    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+  };
+
+  return (
+    <div className="mb-6 bg-white border border-emerald-200 rounded-lg p-5">
+      <div className="flex items-center justify-between mb-1">
+        <h2 className="font-semibold text-primary-dark">Promosi Pattern (PT/PM)</h2>
+        <button
+          onClick={() => { setMsg(null); setForm({ ...EMPTY_FORM }); }}
+          className="text-[11px] px-2 py-0.5 rounded border border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+        >
+          + Pattern manual
+        </button>
+      </div>
+      <p className="text-xs text-gray-500 mb-3">
+        Usulan pattern dari feedback agen lintas penugasan (90 hari). Yang <b>berulang</b> &amp;
+        belum ada di wiki = kandidat kuat. Klik kandidat untuk menyunting lalu <b>Promote</b> jadi
+        pattern resmi. {totalSug > 0 && <span className="text-gray-400">({totalSug} usulan mentah)</span>}
+      </p>
+      {msg && <div className="mb-3 p-2 rounded bg-emerald-50 text-emerald-800 text-xs">{msg}</div>}
+
+      {form ? (
+        <PromoteFormView
+          form={form} skills={skills} busy={busy}
+          onField={setField} onCancel={() => setForm(null)} onSubmit={submit}
+        />
+      ) : (
+        <div className="border border-gray-200 rounded max-h-80 overflow-y-auto divide-y">
+          {loading ? (
+            <div className="p-3 text-xs text-gray-400 italic">Memuat kandidat…</div>
+          ) : candidates.length === 0 ? (
+            <div className="p-3 text-xs text-gray-400 italic">
+              Belum ada usulan pattern dari feedback agen. Jalankan agen AT/KT — usulan muncul di sini.
+            </div>
+          ) : candidates.map((c) => (
+            <button
+              key={c.judul}
+              onClick={() => openFromCandidate(c)}
+              className="w-full text-left p-3 hover:bg-emerald-50/40 transition"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span className="text-sm font-medium text-gray-800">{c.judul}</span>
+                <span className="flex items-center gap-1 shrink-0">
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">×{c.count}</span>
+                  {c.already_exists ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700">sudah ada: {c.existing_id}</span>
+                  ) : c.id_proposed ? (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700">{c.id_proposed}</span>
+                  ) : null}
+                </span>
+              </div>
+              <div className="text-[11px] text-gray-400 mt-0.5">
+                {c.suggested_skill && <span className="uppercase">{c.suggested_skill}</span>}
+                {c.penugasan.length > 0 && <span> · {c.penugasan.length} penugasan</span>}
+              </div>
+              {c.rationales[0] && <div className="text-xs text-gray-500 mt-1 line-clamp-2">{c.rationales[0]}</div>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PromoteFormView({
+  form, skills, busy, onField, onCancel, onSubmit,
+}: {
+  form: PromoteForm;
+  skills: SkillInfo[];
+  busy: boolean;
+  onField: (k: keyof PromoteForm, v: string) => void;
+  onCancel: () => void;
+  onSubmit: () => void;
+}) {
+  const inp = 'w-full border border-gray-300 rounded px-2 py-1.5 text-xs';
+  const lbl = 'block text-[11px] font-semibold text-gray-600 mb-0.5';
+  return (
+    <div className="border border-gray-200 rounded p-3 space-y-2.5">
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className={lbl}>Skill (folder target) *</label>
+          <select value={form.skill} onChange={(e) => onField('skill', e.target.value)} className={inp}>
+            <option value="">— pilih skill —</option>
+            {skills.map((s) => <option key={s.slug} value={s.slug}>{s.slug}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className={lbl}>ID Pattern * (mis. RP-17)</label>
+          <input value={form.pattern_id} onChange={(e) => onField('pattern_id', e.target.value)} className={inp} placeholder="RP-17" />
+        </div>
+      </div>
+      <div>
+        <label className={lbl}>Judul *</label>
+        <input value={form.judul} onChange={(e) => onField('judul', e.target.value)} className={inp} />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className={lbl}>Kategori</label>
+          <input value={form.kategori} onChange={(e) => onField('kategori', e.target.value)} className={inp} placeholder="mis. PBJ-KONTRAK" />
+        </div>
+        <div>
+          <label className={lbl}>Severity</label>
+          <select value={form.severity} onChange={(e) => onField('severity', e.target.value)} className={inp}>
+            {['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'].map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+      <div>
+        <label className={lbl}>Kriteria Baku (sebut pasal/ayat)</label>
+        <input value={form.kriteria_baku} onChange={(e) => onField('kriteria_baku', e.target.value)} className={inp} placeholder="mis. Perpres 16/2018 Pasal 26 ayat (5)" />
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className={lbl}>Kondisi</label>
+          <textarea value={form.kondisi} onChange={(e) => onField('kondisi', e.target.value)} className={inp} rows={3} />
+        </div>
+        <div>
+          <label className={lbl}>Akibat</label>
+          <textarea value={form.akibat} onChange={(e) => onField('akibat', e.target.value)} className={inp} rows={3} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className={lbl}>Bukti yang dicari</label>
+          <textarea value={form.bukti} onChange={(e) => onField('bukti', e.target.value)} className={inp} rows={2} />
+        </div>
+        <div>
+          <label className={lbl}>Rekomendasi</label>
+          <textarea value={form.rekomendasi} onChange={(e) => onField('rekomendasi', e.target.value)} className={inp} rows={2} />
+        </div>
+      </div>
+      <div>
+        <label className={lbl}>Tags (pisahkan koma)</label>
+        <input value={form.tags} onChange={(e) => onField('tags', e.target.value)} className={inp} placeholder="kontrak, sla, denda" />
+      </div>
+      {form.sumber_penugasan.length > 0 && (
+        <div className="text-[11px] text-gray-400">Sumber: {form.sumber_penugasan.join(', ')}</div>
+      )}
+      <div className="flex gap-2 pt-1">
+        <button onClick={onSubmit} disabled={busy} className="text-xs px-3 py-1.5 rounded bg-emerald-600 text-white font-medium disabled:opacity-50">
+          {busy ? 'Menyimpan…' : 'Promote ke Wiki'}
+        </button>
+        <button onClick={onCancel} disabled={busy} className="text-xs px-3 py-1.5 rounded border border-gray-300 text-gray-600 disabled:opacity-50">
+          Batal
+        </button>
+      </div>
+    </div>
   );
 }
 

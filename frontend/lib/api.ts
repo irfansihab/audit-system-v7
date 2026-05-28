@@ -409,6 +409,59 @@ export const api = {
       truncated?: boolean;
     }>(`/knowledge/wiki/page?name=${encodeURIComponent(name)}`),
 
+  // ===== Promosi Pattern (W2) =====
+
+  /** Agregasi usulan pattern dari feedback agen lintas penugasan (kandidat promosi). */
+  getPatternMonitor: (days = 90) =>
+    request<{
+      days: number;
+      total_feedback: number;
+      total_suggestions: number;
+      candidates: Array<{
+        judul: string;
+        id_proposed: string;
+        count: number;
+        rationales: string[];
+        skills: Record<string, number>;
+        suggested_skill: string;
+        penugasan: Array<{ folder: string; obyek: string; skill: string }>;
+        already_exists: boolean;
+        existing_id: string | null;
+      }>;
+      missed_pattern_issues: Array<{
+        description: string;
+        suggested_action: string;
+        severity: string;
+        penugasan_folder: string;
+        skill: string;
+      }>;
+    }>(`/knowledge/pattern-monitor?days=${days}`),
+
+  /** Promote satu usulan jadi pattern wiki resmi (tulis file .md). PT/PM only. */
+  promotePattern: (payload: {
+    skill: string;
+    pattern_id: string;
+    judul: string;
+    kategori?: string;
+    severity?: string;
+    kriteria_baku?: string;
+    kondisi?: string;
+    akibat?: string;
+    rekomendasi?: string;
+    bukti?: string;
+    tags?: string[];
+    sumber_penugasan?: string[];
+  }) =>
+    request<{
+      ok: boolean;
+      id: string;
+      skill: string;
+      kategori: string;
+      severity: string;
+      file: string;
+      readme_updated: boolean;
+    }>('/knowledge/patterns', { method: 'POST', body: JSON.stringify(payload) }),
+
   // ===== CACM / EWS SIRUP (C1a — ingest offline + usulan penugasan) =====
 
   /** Ingest fixture contoh hasil EWS (demo tanpa deploy agent). PT only. */
