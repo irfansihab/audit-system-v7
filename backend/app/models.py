@@ -182,3 +182,44 @@ class AgentRun(Base):
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     penugasan: Mapped["Penugasan"] = relationship(back_populates="agent_runs")
+
+
+class WikiProposalStatus(str, Enum):
+    """Daur hidup usulan catatan vault dari penugasan selesai (W3)."""
+
+    DRAFT = "DRAFT"        # auto-generate dari LHP_DONE; belum di-review
+    APPLIED = "APPLIED"    # sudah di-tulis ke vault (opsi B)
+    REJECTED = "REJECTED"  # auditor tolak (tidak masuk vault)
+
+
+class WikiProposal(Base):
+    """Usulan catatan vault hasil tulis-balik penugasan (W3).
+
+    1 baris per penugasan. Regenerate menggantikan konten (DRAFT). Setelah APPLIED,
+    rebuild = bikin DRAFT baru tanpa mengubah file vault (auditor putuskan apply lagi
+    atau tidak). Anti-duplikat di vault dijaga di sisi apply (idempoten — lihat
+    `wiki_writeback.apply_to_vault`).
+    """
+
+    __tablename__ = "wiki_proposals"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    penugasan_id: Mapped[int] = mapped_column(
+        ForeignKey("penugasan.id"), unique=True, index=True
+    )
+    nama_file: Mapped[str] = mapped_column(String(200))  # pengawasan-<kode>.md
+    konten_md: Mapped[str] = mapped_column(Text)
+    delta_index: Mapped[str | None] = mapped_column(Text, nullable=True)
+    delta_log: Mapped[str | None] = mapped_column(Text, nullable=True)
+    ringkasan: Mapped[str | None] = mapped_column(Text, nullable=True)
+    status: Mapped[WikiProposalStatus] = mapped_column(
+        String(20), default=WikiProposalStatus.DRAFT
+    )
+    dibuat_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    diupdate_at: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
+    )
+    applied_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    applied_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.id"), nullable=True
+    )

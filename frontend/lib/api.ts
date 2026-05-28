@@ -462,6 +462,77 @@ export const api = {
       readme_updated: boolean;
     }>('/knowledge/patterns', { method: 'POST', body: JSON.stringify(payload) }),
 
+  // ===== Tulis-balik Vault (W3) =====
+  // Penugasan LHP_DONE → draft pengawasan-<kode>.md (Karpathy format) + delta
+  // index/log. Auditor preview → Download .md (opsi A, Obsidian flow) atau Apply
+  // ke vault (opsi B). Lihat backend/app/wiki_writeback.py.
+
+  /** Daftar penugasan LHP_DONE + status proposal. Role-agnostik. */
+  getWritebackCandidates: () =>
+    request<{
+      total: number;
+      items: Array<{
+        penugasan_id: number;
+        kode: string;
+        obyek: string;
+        skill: string;
+        lhp_done_at: string | null;
+        proposal_status: 'NONE' | 'DRAFT' | 'APPLIED' | 'REJECTED';
+        nama_file: string | null;
+      }>;
+    }>('/knowledge/writeback/candidates'),
+
+  /** Generate (atau regenerate) draft proposal. PT/PM/KT only. */
+  generateWritebackProposal: (penugasanId: number) =>
+    request<{
+      id: number;
+      penugasan_id: number;
+      nama_file: string;
+      ringkasan: string | null;
+      status: string;
+      konten_md: string;
+      delta_index: string | null;
+      delta_log: string | null;
+    }>(`/knowledge/writeback/${penugasanId}/generate`, { method: 'POST' }),
+
+  /** Ambil proposal terkini (lengkap dengan konten). */
+  getWritebackProposal: (penugasanId: number) =>
+    request<{
+      id: number;
+      penugasan_id: number;
+      nama_file: string;
+      ringkasan: string | null;
+      status: string;
+      konten_md: string;
+      delta_index: string | null;
+      delta_log: string | null;
+      dibuat_at: string | null;
+      diupdate_at: string | null;
+      applied_at: string | null;
+    }>(`/knowledge/writeback/${penugasanId}/proposal`),
+
+  /** URL unduh .md (mencegah CORS issue dgn fetch — pakai window.open). */
+  getWritebackDownloadUrl: (penugasanId: number) => {
+    const token = getToken() || '';
+    return `${API_BASE}/knowledge/writeback/${penugasanId}/download?_token=${encodeURIComponent(token)}`;
+  },
+
+  /** Apply proposal ke vault. PT/PM only. */
+  applyWritebackProposal: (penugasanId: number) =>
+    request<{
+      status: string;
+      apply_result: {
+        ok: boolean;
+        path: string;
+        index: { changed: boolean; reason: string };
+        log: { changed: boolean; reason: string };
+      };
+    }>(`/knowledge/writeback/${penugasanId}/apply`, { method: 'POST' }),
+
+  /** Tolak proposal (REJECTED). PT/PM only. */
+  rejectWritebackProposal: (penugasanId: number) =>
+    request<{ status: string }>(`/knowledge/writeback/${penugasanId}/reject`, { method: 'POST' }),
+
   // ===== CACM / EWS SIRUP (C1a — ingest offline + usulan penugasan) =====
 
   /** Ingest fixture contoh hasil EWS (demo tanpa deploy agent). PT only. */

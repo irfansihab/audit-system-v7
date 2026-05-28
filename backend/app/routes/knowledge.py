@@ -4,6 +4,9 @@
 - W2 (promosi pattern): agregasi usulan pattern dari feedback agen lintas
   penugasan (`/pattern-monitor`) + promote jadi pattern wiki resmi (`/patterns`,
   PT/PM). Lihat app.wiki_promote.
+- W3 (tulis-balik penugasan ➝ vault): penugasan `LHP_DONE` ➝ generate draft
+  `pengawasan-{kode}.md` + delta index/log ➝ review ➝ Download .md (opsi A,
+  rekomendasi) atau Apply ke vault (opsi B). Lihat app.wiki_writeback.
 
 V6 read-only — promosi menulis ke folder wiki proyek, bukan ke V6.
 """
@@ -11,15 +14,31 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
+from fastapi.responses import PlainTextResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app import wiki_promote
+from app import wiki_promote, wiki_writeback
 from app.auth import get_current_user
+from app.config import get_settings
 from app.database import get_db
-from app.models import Penugasan, Role, User
+from app.models import (
+    Penugasan,
+    Role,
+    User,
+    WikiProposal,
+    WikiProposalStatus,
+)
 from app.routes.feedback import _collect_feedback
 from app.tools.wiki_tools import vault_get_page, vault_search
+
+
+def _is_lhp_done(folder: Path) -> bool:
+    """Cocokkan dengan `compute_penugasan_status` di storage.py: LHP_DONE bila
+    ada `_LHP/LHP-SUBSTANSI*.docx`. Inline supaya hemat query (kita tidak butuh
+    derivasi penuh untuk filtering candidate)."""
+    lhp_dir = folder / "_LHP"
+    return lhp_dir.exists() and any(lhp_dir.glob("LHP-SUBSTANSI*.docx"))
 
 router = APIRouter(prefix="/knowledge", tags=["knowledge"])
 
@@ -111,3 +130,281 @@ async def create_pattern(
     if not res.get("ok"):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, res.get("error", "gagal promote pattern"))
     return res
+
+
+# =============================================================================
+# W3 — tulis-balik penugasan ➝ vault
+# =============================================================================
+
+def _proposal_to_dict(p: WikiProposal) -> dict:
+    """Serialisasi WikiProposal untuk respons HTTP."""
+    return {
+        "id": p.id,
+        "penugasan_id": p.penugasan_id,
+        "nama_file": p.nama_file,
+        "ringkasan": p.ringkasan,
+        "status": p.status.value if hasattr(p.status, "value") else str(p.status),
+        "dibuat_at": p.dibuat_at.isoformat() if p.dibuat_at else None,
+        "diupdate_at": p.diupdate_at.isoformat() if p.diupdate_at else None,
+        "applied_at": p.applied_at.isoformat() if p.applied_at else None,
+    }
+
+
+def _proposal_with_content(p: WikiProposal) -> dict:
+    """Versi lengkap termasuk konten markdown + delta."""
+    base = _proposal_to_dict(p)
+    base["konten_md"] = p.konten_md
+    base["delta_index"] = p.delta_index
+    base["delta_log"] = p.delta_log
+    return base
+
+
+@router.get("/writeback/candidates")
+async def writeback_candidates(
+    _current: tuple[User, Role] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Daftar penugasan LHP_DONE + status proposal-nya (none / draft / applied /
+    rejected). Read-only & role-agnostik."""
+    rows = (
+        await db.execute(
+            select(
+                Penugasan.id,
+                Penugasan.kode,
+                Penugasan.obyek,
+                Penugasan.skill,
+                Penugasan.folder_path,
+                Penugasan.updated_at,
+            ).order_by(Penugasan.updated_at.desc())
+        )
+    ).all()
+
+    # Bulk-load proposals (1 query)
+    proposal_rows = (
+        await db.execute(
+            select(WikiProposal.penugasan_id, WikiProposal.status, WikiProposal.nama_file)
+        )
+    ).all()
+    proposal_by_pid = {pid: (st, nf) for pid, st, nf in proposal_rows}
+
+    items: list[dict] = []
+    for pid, kode, obyek, skill, folder_path, updated_at in rows:
+        if not folder_path:
+            continue
+        folder = Path(folder_path)
+        if not _is_lhp_done(folder):
+            continue
+        skill_value = skill if isinstance(skill, str) else getattr(skill, "value", str(skill))
+        st_proposal, nf_proposal = proposal_by_pid.get(pid, (None, None))
+        items.append({
+            "penugasan_id": pid,
+            "kode": kode,
+            "obyek": obyek,
+            "skill": skill_value,
+            "lhp_done_at": updated_at.isoformat() if updated_at else None,
+            "proposal_status": (
+                st_proposal.value if hasattr(st_proposal, "value")
+                else (st_proposal if st_proposal else "NONE")
+            ),
+            "nama_file": nf_proposal,
+        })
+    return {"items": items, "total": len(items)}
+
+
+async def _load_penugasan_or_404(db: AsyncSession, penugasan_id: int) -> Penugasan:
+    p = (
+        await db.execute(select(Penugasan).where(Penugasan.id == penugasan_id))
+    ).scalar_one_or_none()
+    if not p:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, f"Penugasan {penugasan_id} tidak ditemukan")
+    return p
+
+
+@router.post("/writeback/{penugasan_id}/generate")
+async def writeback_generate(
+    penugasan_id: int,
+    current: tuple[User, Role] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Generate (atau regenerate) draft catatan vault dari penugasan LHP_DONE.
+
+    Akses: PT / PM / KT (kurasi + tulis catatan operasional). AT cuma boleh
+    lihat preview (via /proposal).
+    """
+    user, role = current
+    if role not in (Role.PT, Role.PM, Role.KT):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            f"Generate draft wiki hanya untuk PT/PM/KT. Role Anda: {role.value}.",
+        )
+
+    p = await _load_penugasan_or_404(db, penugasan_id)
+    folder = Path(p.folder_path)
+    if not _is_lhp_done(folder):
+        raise HTTPException(
+            status.HTTP_400_BAD_REQUEST,
+            "Penugasan belum LHP_DONE — tulis-balik wiki menunggu LHP terbit.",
+        )
+
+    ketua_tim_nama: str | None = None
+    if p.ketua_tim_id:
+        kt = (
+            await db.execute(select(User.nama_lengkap).where(User.id == p.ketua_tim_id))
+        ).scalar_one_or_none()
+        ketua_tim_nama = kt
+
+    skill_value = p.skill if isinstance(p.skill, str) else getattr(p.skill, "value", str(p.skill))
+    built = wiki_writeback.build_proposal_from_folder(
+        penugasan_dict={
+            "kode": p.kode,
+            "obyek": p.obyek,
+            "skill": skill_value,
+            "nomor_st": p.nomor_st,
+            "tanggal_st": p.tanggal_st,
+            "created_at": p.created_at,
+        },
+        folder=folder,
+        ketua_tim_nama=ketua_tim_nama,
+    )
+
+    # Upsert (1 baris per penugasan_id)
+    existing = (
+        await db.execute(select(WikiProposal).where(WikiProposal.penugasan_id == penugasan_id))
+    ).scalar_one_or_none()
+
+    now = datetime.utcnow()
+    if existing:
+        existing.nama_file = built["nama_file"]
+        existing.konten_md = built["konten_md"]
+        existing.delta_index = built["delta_index"]
+        existing.delta_log = built["delta_log"]
+        existing.ringkasan = built["ringkasan"]
+        existing.status = WikiProposalStatus.DRAFT  # regenerate → DRAFT (perlu re-apply manual)
+        existing.diupdate_at = now
+        # Tidak reset applied_at/applied_by — info historis bila pernah apply
+        proposal = existing
+    else:
+        proposal = WikiProposal(
+            penugasan_id=penugasan_id,
+            nama_file=built["nama_file"],
+            konten_md=built["konten_md"],
+            delta_index=built["delta_index"],
+            delta_log=built["delta_log"],
+            ringkasan=built["ringkasan"],
+            status=WikiProposalStatus.DRAFT,
+            dibuat_at=now,
+            diupdate_at=now,
+        )
+        db.add(proposal)
+
+    await db.commit()
+    await db.refresh(proposal)
+    return _proposal_with_content(proposal)
+
+
+@router.get("/writeback/{penugasan_id}/proposal")
+async def writeback_proposal(
+    penugasan_id: int,
+    _current: tuple[User, Role] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Ambil proposal terkini untuk satu penugasan (kalau ada)."""
+    p = (
+        await db.execute(select(WikiProposal).where(WikiProposal.penugasan_id == penugasan_id))
+    ).scalar_one_or_none()
+    if not p:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Belum ada proposal — generate dulu.")
+    return _proposal_with_content(p)
+
+
+@router.get("/writeback/{penugasan_id}/download")
+async def writeback_download(
+    penugasan_id: int,
+    _current: tuple[User, Role] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> PlainTextResponse:
+    """Unduh konten .md (opsi A — Obsidian flow). Semua role boleh."""
+    p = (
+        await db.execute(select(WikiProposal).where(WikiProposal.penugasan_id == penugasan_id))
+    ).scalar_one_or_none()
+    if not p:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Belum ada proposal — generate dulu.")
+    return PlainTextResponse(
+        content=p.konten_md,
+        media_type="text/markdown; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{p.nama_file}"'},
+    )
+
+
+@router.post("/writeback/{penugasan_id}/apply")
+async def writeback_apply(
+    penugasan_id: int,
+    current: tuple[User, Role] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Tulis langsung ke vault (opsi B). PT/PM only."""
+    user, role = current
+    if role not in (Role.PT, Role.PM):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            f"Apply ke vault hanya untuk PT/PM. Role Anda: {role.value}.",
+        )
+
+    settings = get_settings()
+    vault_root = settings.vault_path
+    if vault_root is None:
+        raise HTTPException(
+            status.HTTP_503_SERVICE_UNAVAILABLE,
+            "Vault tidak dikonfigurasi — set APP_VAULT_PATH. Pakai Download .md sebagai gantinya.",
+        )
+
+    p = (
+        await db.execute(select(WikiProposal).where(WikiProposal.penugasan_id == penugasan_id))
+    ).scalar_one_or_none()
+    if not p:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Belum ada proposal — generate dulu.")
+
+    try:
+        res = wiki_writeback.apply_to_vault(
+            vault_root=vault_root,
+            nama_file=p.nama_file,
+            konten_md=p.konten_md,
+            delta_index=p.delta_index or "",
+            delta_log=p.delta_log or "",
+        )
+    except wiki_writeback.WikiWriteBackError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc)) from exc
+
+    p.status = WikiProposalStatus.APPLIED
+    p.applied_at = datetime.utcnow()
+    p.applied_by_user_id = user.id
+    await db.commit()
+    await db.refresh(p)
+
+    out = _proposal_to_dict(p)
+    out["apply_result"] = res
+    return out
+
+
+@router.post("/writeback/{penugasan_id}/reject")
+async def writeback_reject(
+    penugasan_id: int,
+    current: tuple[User, Role] = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Tandai proposal REJECTED — tidak masuk vault. PT/PM only."""
+    role = current[1]
+    if role not in (Role.PT, Role.PM):
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN,
+            f"Tolak proposal hanya untuk PT/PM. Role Anda: {role.value}.",
+        )
+    p = (
+        await db.execute(select(WikiProposal).where(WikiProposal.penugasan_id == penugasan_id))
+    ).scalar_one_or_none()
+    if not p:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Belum ada proposal.")
+    p.status = WikiProposalStatus.REJECTED
+    await db.commit()
+    await db.refresh(p)
+    return _proposal_to_dict(p)

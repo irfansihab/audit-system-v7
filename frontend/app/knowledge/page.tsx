@@ -2,7 +2,10 @@
 
 // Halaman Knowledge / Wiki.
 // W1 (AKTIF): panel "Cari Wiki" — baca vault pengetahuan organisasi (read-only).
-// W2/W3 (scaffold): promosi pattern + tulis-balik penugasan ke wiki — substansi menyusul.
+// W2 (AKTIF): Promosi Pattern — agregasi usulan pattern dari feedback agen.
+// W3 (AKTIF): Tulis-balik Vault — penugasan LHP_DONE → draft catatan vault
+//             (Karpathy format) dengan Download .md (opsi A, Obsidian) atau
+//             Apply ke vault (opsi B). Lihat lib/api.ts → getWritebackCandidates.
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
@@ -29,13 +32,6 @@ type PatternCandidate = {
   already_exists: boolean;
   existing_id: string | null;
 };
-
-const SECTIONS = [
-  {
-    title: 'Tulis-balik Penugasan (W3)',
-    desc: 'Saat penugasan selesai, hasilkan draft catatan wiki (temuan + rekomendasi) untuk disetujui & di-apply ke vault.',
-  },
-];
 
 export default function KnowledgePage() {
   const router = useRouter();
@@ -214,17 +210,8 @@ export default function KnowledgePage() {
         {/* ===== Graduasi (PT/PM) ===== */}
         {(session.role_aktif === 'PT' || session.role_aktif === 'PM') && <GraduasiPanel />}
 
-        {/* ===== W3 scaffold ===== */}
-        <div className="mb-3 text-sm text-gray-500">Berikutnya (substansi menyusul):</div>
-        <div className="grid gap-4 md:grid-cols-2">
-          {SECTIONS.map((s) => (
-            <div key={s.title} className="bg-white border border-dashed border-gray-300 rounded-lg p-5">
-              <h2 className="font-semibold text-primary-dark mb-2">{s.title}</h2>
-              <p className="text-sm text-gray-500">{s.desc}</p>
-              <div className="mt-3 text-xs text-gray-400 italic">Substansi menyusul.</div>
-            </div>
-          ))}
-        </div>
+        {/* ===== W3: Tulis-balik Vault (semua role bisa lihat; aksi tergantung role) ===== */}
+        <WritebackPanel role={session.role_aktif} />
       </div>
     </main>
   );
@@ -548,6 +535,238 @@ function GraduasiPanel() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// W3 — Tulis-balik Vault
+//
+// Penugasan LHP_DONE → draft pengawasan-<kode>.md (Karpathy format) + delta
+// index/log. Auditor (PT/PM/KT) klik "Generate", review preview, lalu pilih:
+//   • Download .md (opsi A — rekomendasi, di-apply manual via Obsidian; semua role)
+//   • Apply ke vault (opsi B — app tulis langsung; PT/PM only)
+//   • Regenerate / Reject
+// =============================================================================
+
+type WritebackCandidate = {
+  penugasan_id: number;
+  kode: string;
+  obyek: string;
+  skill: string;
+  lhp_done_at: string | null;
+  proposal_status: 'NONE' | 'DRAFT' | 'APPLIED' | 'REJECTED';
+  nama_file: string | null;
+};
+
+type WritebackProposal = {
+  id: number;
+  penugasan_id: number;
+  nama_file: string;
+  ringkasan: string | null;
+  status: string;
+  konten_md: string;
+  delta_index: string | null;
+  delta_log: string | null;
+  dibuat_at?: string | null;
+  diupdate_at?: string | null;
+  applied_at?: string | null;
+};
+
+function statusBadge(s: WritebackCandidate['proposal_status']) {
+  const cls =
+    s === 'APPLIED' ? 'bg-emerald-100 text-emerald-800' :
+    s === 'DRAFT'   ? 'bg-amber-100 text-amber-800' :
+    s === 'REJECTED'? 'bg-gray-200 text-gray-600' :
+                      'bg-gray-100 text-gray-500';
+  const label = s === 'NONE' ? 'belum digenerate' : s.toLowerCase();
+  return <span className={`text-[10px] px-1.5 py-0.5 rounded ${cls}`}>{label}</span>;
+}
+
+function WritebackPanel({ role }: { role: string }) {
+  const canEdit = role === 'PT' || role === 'PM' || role === 'KT';
+  const canApply = role === 'PT' || role === 'PM';
+
+  const [items, setItems] = useState<WritebackCandidate[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState<WritebackCandidate | null>(null);
+  const [proposal, setProposal] = useState<WritebackProposal | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [tab, setTab] = useState<'md' | 'index' | 'log'>('md');
+
+  const refresh = () => {
+    setLoading(true);
+    api.getWritebackCandidates()
+      .then((r) => setItems(r.items))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+  useEffect(() => { refresh(); }, []);
+
+  const openCandidate = async (c: WritebackCandidate) => {
+    setSelected(c); setProposal(null); setMsg(null); setTab('md');
+    if (c.proposal_status !== 'NONE') {
+      try {
+        setBusy(true);
+        const p = await api.getWritebackProposal(c.penugasan_id);
+        setProposal(p);
+      } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+    }
+  };
+
+  const doGenerate = async () => {
+    if (!selected) return;
+    setBusy(true); setMsg(null);
+    try {
+      const p = await api.generateWritebackProposal(selected.penugasan_id);
+      setProposal(p);
+      setMsg('Draft dibuat ulang (status: DRAFT).');
+      refresh();
+    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+  };
+
+  const doApply = async () => {
+    if (!selected) return;
+    if (!confirm(`Apply ke vault?\n\nFile pengawasan-<kode>.md akan ditulis langsung ke folder vault. Index & log juga di-update.\n\nKalau ragu, pilih "Download .md" sebagai gantinya — lebih aman, kamu apply manual via Obsidian.`)) return;
+    setBusy(true); setMsg(null);
+    try {
+      const r = await api.applyWritebackProposal(selected.penugasan_id);
+      setMsg(`Diterapkan ke vault. index: ${r.apply_result.index.reason}; log: ${r.apply_result.log.reason}.`);
+      if (proposal) setProposal({ ...proposal, status: r.status });
+      refresh();
+    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+  };
+
+  const doReject = async () => {
+    if (!selected) return;
+    if (!confirm('Tolak proposal ini? (status → REJECTED, tidak masuk vault)')) return;
+    setBusy(true); setMsg(null);
+    try {
+      const r = await api.rejectWritebackProposal(selected.penugasan_id);
+      if (proposal) setProposal({ ...proposal, status: r.status });
+      setMsg('Proposal ditolak.');
+      refresh();
+    } catch (e: any) { setMsg(e.message); } finally { setBusy(false); }
+  };
+
+  const doDownload = () => {
+    if (!selected) return;
+    window.location.href = api.getWritebackDownloadUrl(selected.penugasan_id);
+  };
+
+  return (
+    <div className="mb-6 bg-white border border-sky-200 rounded-lg p-5">
+      <h2 className="font-semibold text-primary-dark mb-1">Tulis-balik Vault (W3)</h2>
+      <p className="text-xs text-gray-500 mb-3">
+        Penugasan yang sudah <b>LHP_DONE</b> bisa diringkas jadi catatan vault (format Karpathy +
+        sitasi). Auditor PT/PM/KT generate draft, lalu pilih <b>Download .md</b> (rekomendasi —
+        apply manual lewat Obsidian) atau <b>Apply ke vault</b> (app tulis langsung; PT/PM saja).
+      </p>
+      {msg && <div className="mb-3 p-2 rounded bg-sky-50 text-sky-800 text-xs">{msg}</div>}
+
+      <div className="grid md:grid-cols-2 gap-3">
+        {/* Daftar kandidat */}
+        <div className="border border-gray-200 rounded max-h-[460px] overflow-y-auto divide-y">
+          {loading ? (
+            <div className="p-3 text-xs text-gray-400 italic">Memuat kandidat…</div>
+          ) : items.length === 0 ? (
+            <div className="p-3 text-xs text-gray-400 italic">
+              Belum ada penugasan LHP_DONE. Selesaikan satu penugasan dulu (laporan terbit) — akan muncul di sini.
+            </div>
+          ) : items.map((c) => (
+            <button
+              key={c.penugasan_id}
+              onClick={() => openCandidate(c)}
+              className={`w-full text-left p-3 hover:bg-sky-50/40 transition ${selected?.penugasan_id === c.penugasan_id ? 'bg-sky-50' : ''}`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span className="text-sm font-medium text-gray-800 line-clamp-2">{c.obyek}</span>
+                {statusBadge(c.proposal_status)}
+              </div>
+              <div className="text-[11px] text-gray-400 mt-0.5">
+                <span className="uppercase">{c.skill}</span>
+                <span> · {c.kode}</span>
+                {c.lhp_done_at && <span> · {c.lhp_done_at.slice(0, 10)}</span>}
+              </div>
+            </button>
+          ))}
+        </div>
+
+        {/* Preview proposal */}
+        <div className="border border-gray-200 rounded p-3 min-h-[260px]">
+          {!selected ? (
+            <p className="text-xs text-gray-400 italic">Pilih satu penugasan di kiri untuk lihat draft.</p>
+          ) : (
+            <>
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <div className="text-xs font-semibold text-gray-700">{selected.obyek}</div>
+                  <div className="text-[11px] text-gray-400">
+                    {selected.kode} · <span className="uppercase">{selected.skill}</span>
+                  </div>
+                </div>
+                {proposal && <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-600">{proposal.status}</span>}
+              </div>
+
+              {!proposal ? (
+                <div className="text-center py-6">
+                  <p className="text-xs text-gray-500 mb-3">
+                    Belum ada draft untuk penugasan ini.
+                  </p>
+                  {canEdit ? (
+                    <button onClick={doGenerate} disabled={busy} className="px-3 py-1.5 rounded bg-sky-600 text-white text-xs font-semibold hover:bg-sky-700 disabled:opacity-50">
+                      {busy ? 'Membuat…' : 'Generate draft'}
+                    </button>
+                  ) : (
+                    <p className="text-[11px] text-gray-400 italic">Hanya PT/PM/KT yang bisa generate.</p>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="flex gap-1 mb-2 text-[11px]">
+                    {(['md', 'index', 'log'] as const).map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setTab(t)}
+                        className={`px-2 py-0.5 rounded ${tab === t ? 'bg-sky-600 text-white' : 'bg-gray-100 text-gray-600'}`}
+                      >
+                        {t === 'md' ? `${proposal.nama_file}` : t === 'index' ? 'delta index.md' : 'delta log.md'}
+                      </button>
+                    ))}
+                  </div>
+                  <pre className="text-[11px] whitespace-pre-wrap font-mono text-gray-800 bg-gray-50 rounded p-2 max-h-[300px] overflow-y-auto">
+                    {tab === 'md' ? proposal.konten_md
+                      : tab === 'index' ? (proposal.delta_index || '(kosong)')
+                      : (proposal.delta_log || '(kosong)')}
+                  </pre>
+
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <button onClick={doDownload} disabled={busy} className="px-3 py-1.5 rounded bg-primary text-white text-xs font-semibold hover:bg-primary-dark disabled:opacity-50">
+                      Download .md
+                    </button>
+                    {canApply && (
+                      <button onClick={doApply} disabled={busy || proposal.status === 'APPLIED'} className="px-3 py-1.5 rounded bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 disabled:opacity-50">
+                        {proposal.status === 'APPLIED' ? 'Sudah di-apply' : 'Apply ke vault'}
+                      </button>
+                    )}
+                    {canEdit && (
+                      <button onClick={doGenerate} disabled={busy} className="px-3 py-1.5 rounded bg-gray-100 text-gray-700 text-xs font-semibold hover:bg-gray-200 disabled:opacity-50">
+                        Regenerate
+                      </button>
+                    )}
+                    {canApply && proposal.status !== 'REJECTED' && (
+                      <button onClick={doReject} disabled={busy} className="px-3 py-1.5 rounded bg-gray-300 text-gray-700 text-xs font-semibold hover:bg-gray-400 disabled:opacity-50">
+                        Tolak
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
     </div>
